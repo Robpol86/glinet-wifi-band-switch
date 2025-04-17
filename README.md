@@ -63,3 +63,34 @@ EOF
 
 - [ ] Project should be non-volatile
 - [ ] Files and settings should survive firmware upgrades
+
+## Proposed Flow
+
+- Toggle switched OFF
+    - Both repeater bands ENABLED
+- Toggle switched ON
+    - If no internet
+        - Both repeater bands DISABLED
+    - If connected to 5 GHz
+        - 2.4 GHz repeater band ENABLED
+        - 5 GHz repeater band DISABLED
+    - If connected to 2.4 GHz
+        - 5 GHz repeater band ENABLED
+        - 2.4 GHz repeater band DISABLED
+- On connect:
+    - Toggle switched OFF
+        - Both repeater bands ENABLED
+    - Until internet
+        - Both repeater bands DISABLED
+    - If connected to 5 GHz
+        - 2.4 GHz repeater band ENABLED
+    - If connected to 2.4 GHz
+        - 5 GHz repeater band ENABLED
+- On disconnect:
+    - Toggle switched OFF
+        - Both repeater bands ENABLED
+    - Else
+        - Both repeater bands DISABLED
+
+Single script that accepts both events as entrypoints. Implement single-instance with lock file. On new instance always kill
+old instance.
