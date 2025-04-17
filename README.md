@@ -40,7 +40,7 @@ EOF
 
 ### Connect to internet WiFi event
 
-- [ ] Fire immediately when the router connects to a wireless network
+- [x] Fire immediately when the router connects to a wireless network
 
 ```bash
 tee /etc/hotplug.d/iface/10-wifi-band <<'EOF'
@@ -108,9 +108,82 @@ chmod +x /etc/hotplug.d/iface/10-wifi-band
     # INTERFACE=wwan
     # PWD=/
     # DEVICE=apclix0
+# Seems to not fire the script when repeater bands are toggled on/off.
 ```
 
 - [ ] Find out which band is used
+
+```bash
+ubus call repeater status
+# Run the above to get JSON state of the repeater
+# This is when it's not connected, state failed to connect
+# {
+# 	"config": {
+# 		"ssid": "Le Cafe Fokus",
+# 		"protocol": "dhcp",
+# 		"key": "xxxx",
+# 		"remember": true,
+# 		"disguise": false,
+# 		"manual": false,
+# 		"auto_portal": false,
+# 		"macaddr": {
+# 			"mode": "random",
+# 			"update": "none",
+# 			"macaddr": "xxxx"
+# 		}
+# 	},
+# 	"state": 3,
+# 	"state_s": "failed",
+# 	"running": false,
+# 	"fail_type": "not-found"
+# }
+# When connecting:
+	# "state": 1,
+	# "state_s": "connecting",
+	# "running": true,
+	# "fail_type": ""
+# When connected to 2g:
+# {
+# 	"ssid": "Le Cafe Fokus",
+# 	"running": true,
+# 	"config": {
+# 		"ssid": "Le Cafe Fokus",
+# 		"protocol": "dhcp",
+# 		"key": "xxxx",
+# 		"remember": true,
+# 		"disguise": false,
+# 		"manual": false,
+# 		"auto_portal": false,
+# 		"macaddr": {
+# 			"mode": "random",
+# 			"update": "none",
+# 			"macaddr": "xxxx"
+# 		}
+# 	},
+# 	"channel": 6,
+# 	"state": 2,
+# 	"fail_type": "",
+# 	"device": "mt798111",
+# 	"portal": false,
+# 	"state_s": "connected",
+# 	"macaddr": "xxxx",
+# 	"connected": "1s",
+# 	"network": "wwan",
+# 	"ipv4": {
+# 		"dns": [
+# 			"192.168.1.1"
+# 		],
+# 		"gateway": "192.168.1.1",
+# 		"ip": "192.168.1.168/24"
+# 	},
+# 	"signal": -48,
+# 	"bare_mode": false,
+# 	"htmode": "HE40",
+# 	"dfs": false,
+# 	"bssid": "xxxx"
+# }
+```
+
 - [ ] When the router reconnects this event should also fire
 
 ### Detect when there is internet available
