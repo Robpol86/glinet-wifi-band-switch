@@ -41,6 +41,75 @@ EOF
 ### Connect to internet WiFi event
 
 - [ ] Fire immediately when the router connects to a wireless network
+
+```bash
+tee /etc/hotplug.d/iface/10-wifi-band <<'EOF'
+#!/bin/sh
+logger "wifi-band INTERFACE='$INTERFACE' ACTION='$ACTION' DEVICE='$DEVICE'"
+date >> /tmp/dump.txt
+env >> /tmp/dump.txt
+EOF
+chmod +x /etc/hotplug.d/iface/10-wifi-band
+
+# Above logged this when I manually reconnected to a coffee shop wifi network:
+# Thu Apr 17 14:21:15 2025 user.notice root: wifi-band INTERFACE='wwan' ACTION='ifdown' DEVICE=''
+# Thu Apr 17 14:21:23 2025 user.notice root: wifi-band INTERFACE='wwan' ACTION='ifup' DEVICE='apclix0'
+# Thu Apr 17 14:21:42 2025 user.notice root: wifi-band INTERFACE='wwan' ACTION='ifdown' DEVICE=''
+# Thu Apr 17 14:23:03 2025 user.notice root: wifi-band INTERFACE='wwan' ACTION='ifup' DEVICE='apclix0'
+# It kept bringing down and up the repeater AP, probably because DFS is enabled
+# This was also dumped:
+# Thu Apr 17 14:21:15 CEST 2025
+    # USER=root
+    # ACTION=ifdown
+    # SHLVL=1
+    # HOME=/
+    # HOTPLUG_TYPE=iface
+    # LOGNAME=root
+    # DEVICENAME=
+    # TERM=linux
+    # PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    # INTERFACE=wwan
+    # PWD=/
+# Thu Apr 17 14:21:23 CEST 2025
+    # USER=root
+    # ACTION=ifup
+    # SHLVL=1
+    # HOME=/
+    # HOTPLUG_TYPE=iface
+    # LOGNAME=root
+    # DEVICENAME=
+    # TERM=linux
+    # PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    # INTERFACE=wwan
+    # PWD=/
+    # DEVICE=apclix0
+# Thu Apr 17 14:21:42 CEST 2025
+    # USER=root
+    # ACTION=ifdown
+    # SHLVL=1
+    # HOME=/
+    # HOTPLUG_TYPE=iface
+    # LOGNAME=root
+    # DEVICENAME=
+    # TERM=linux
+    # PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    # INTERFACE=wwan
+    # PWD=/
+# Thu Apr 17 14:23:03 CEST 2025
+    # USER=root
+    # ACTION=ifup
+    # SHLVL=1
+    # HOME=/
+    # HOTPLUG_TYPE=iface
+    # LOGNAME=root
+    # DEVICENAME=
+    # TERM=linux
+    # PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    # INTERFACE=wwan
+    # PWD=/
+    # DEVICE=apclix0
+```
+
 - [ ] Find out which band is used
 - [ ] When the router reconnects this event should also fire
 
