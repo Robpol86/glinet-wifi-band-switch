@@ -4,9 +4,11 @@ Prevent GL.iNet GL-MT3000 from repeating on the same band and only bring up WiFi
 
 ## Proposed Flow
 
-- Toggle switched OFF
+- Feature not enabled
+    - Noop
+- Toggled from ON to OFF
     - Both repeater bands ENABLED
-- Toggle switched ON
+- Toggled from OFF to ON
     - If no internet
         - Both repeater bands DISABLED
     - If connected to 5 GHz
@@ -17,18 +19,25 @@ Prevent GL.iNet GL-MT3000 from repeating on the same band and only bring up WiFi
         - 2.4 GHz repeater band DISABLED
 - On connect:
     - Toggle switched OFF
-        - Both repeater bands ENABLED
+        - Noop
     - Until internet
         - Both repeater bands DISABLED
     - If connected to 5 GHz
         - 2.4 GHz repeater band ENABLED
+        - 5 GHz repeater band DISABLED
     - If connected to 2.4 GHz
         - 5 GHz repeater band ENABLED
+        - 2.4 GHz repeater band DISABLED
 - On disconnect:
     - Toggle switched OFF
-        - Both repeater bands ENABLED
+        - Noop
     - Else
         - Both repeater bands DISABLED
+- On boot:
+    - Toggle switched OFF
+        - Noop
+    - Else
+        - TODO avoid race conditions
 
 Single script that accepts both events as entrypoints. Implement single-instance with lock file. On new instance always kill
 old instance.
@@ -36,6 +45,11 @@ old instance.
 ## Hooks
 
 Find these APIs, hooks, or entrypoints:
+
+### Feature enabled state
+
+- [ ] Fire when dropdown selects wifi-band
+- [ ] Fire when dropdown selects something else
 
 ### Toggle switch state
 
