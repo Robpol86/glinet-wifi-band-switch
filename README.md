@@ -46,39 +46,24 @@ old instance.
 
 Find these APIs, hooks, or entrypoints:
 
-### Feature enabled state
-
-- [ ] Fire when dropdown selects wifi-band
-- [ ] Fire when dropdown selects something else
-
 ### Toggle switch state
 
 - [x] Fire immediately when switch is toggled and get the on or off state.
 
 ```bash
-# from https://github.com/AzulEterno/openwrt-nlbwmoncomitter/blob/main/etc/hotplug.d/button/10-buttons
-# View log statements with: logread -l 10
-mkdir /etc/hotplug.d/button
-echo 'logger "button $BUTTON action $ACTION"' |tee /etc/hotplug.d/button/10-log
-
-# Above fires immediately when toggled. Logs these messages:
-# Thu Apr 17 12:57:37 2025 user.notice root: button switch action released
-# Thu Apr 17 12:57:52 2025 user.notice root: button switch action pressed
-
+# Adds a new dropdown entry to /#/btnsettings automatically in the Web UI
 tee /etc/gl-switch.d/wifi-band.sh <<'EOF'
 #!/bin/sh
 . /lib/functions/gl_util.sh
 
-action=$1
+action="$1"  # "on" or "off"
 
-logger "ACTION: $action"
+logger "wifi-band switch $action"
+echo "$(date) switch $action" >> /tmp/wifi-band.log
 EOF
-
-# Above adds a new dropdown entry to /#/btnsettings automatically in the Web UI
-# Thu Apr 17 13:44:58 2025 user.notice gl-switch: switch pressed
-# Thu Apr 17 13:44:58 2025 user.notice root: ACTION: on
-# Thu Apr 17 13:45:00 2025 user.notice gl-switch: switch released
-# Thu Apr 17 13:45:00 2025 user.notice root: ACTION: off
+chmod +x /etc/gl-switch.d/wifi-band.sh
+# If feature enabled (in the dropdown) then /etc/gl-switch.d/wifi-band.sh runs on boot regardless of switch state
+# If user enables the feature whilst the switch is ON nothing will happen
 ```
 
 - [ ] Read the state of the switch without needing to toggle it.
