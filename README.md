@@ -2,7 +2,7 @@
 
 Prevent GL.iNet GL-MT3000 from repeating on the same band and only bring up WiFi when there is internet available.
 
-## TODOs
+## Hooks
 
 Find these APIs, hooks, or entrypoints:
 
@@ -37,6 +37,12 @@ EOF
 ```
 
 - [ ] Read the state of the switch without needing to toggle it.
+
+- [x] Check if toggle switch is set to wifi-band
+
+```bash
+uci get switch-button.@main[0].func |grep -q '^wifi-band$'
+```
 
 ### Connect to internet WiFi event
 
