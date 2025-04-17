@@ -9,7 +9,6 @@ Find these APIs, hooks, or entrypoints:
 ### Toggle switch state
 
 - [x] Fire immediately when switch is toggled and get the on or off state.
-- [ ] Read the state of the switch without needing to toggle it.
 
 ```bash
 # from https://github.com/AzulEterno/openwrt-nlbwmoncomitter/blob/main/etc/hotplug.d/button/10-buttons
@@ -36,6 +35,8 @@ EOF
 # Thu Apr 17 13:45:00 2025 user.notice gl-switch: switch released
 # Thu Apr 17 13:45:00 2025 user.notice root: ACTION: off
 ```
+
+- [ ] Read the state of the switch without needing to toggle it.
 
 ### Connect to internet WiFi event
 
