@@ -68,6 +68,17 @@ chmod +x /etc/gl-switch.d/wifi-band.sh
 
 - [ ] Read the state of the switch without needing to toggle it.
 
+Seems like there's no way to do this. Instead maybe `uci set myscript.switch_state=on`?
+
+```
+if [ "$ACTION" = "pressed" ]; then
+    uci set myscript.switch_state=on
+else
+    uci set myscript.switch_state=off
+fi
+uci commit myscript
+```
+
 - [x] Check if toggle switch is set to wifi-band
 
 ```bash
