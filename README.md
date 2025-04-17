@@ -22,6 +22,7 @@ echo 'logger "button $BUTTON action $ACTION"' |tee /etc/hotplug.d/button/10-log
 # Thu Apr 17 12:57:52 2025 user.notice root: button switch action pressed
 
 tee /etc/gl-switch.d/wifi-band.sh <<'EOF'
+#!/bin/sh
 . /lib/functions/gl_util.sh
 
 action=$1
@@ -30,8 +31,10 @@ logger "ACTION: $action"
 EOF
 
 # Above adds a new dropdown entry to /#/btnsettings automatically in the Web UI
-# Thu Apr 17 13:10:41 2025 user.notice gl-switch: switch released
-# Thu Apr 17 13:10:44 2025 user.notice gl-switch: switch pressed
+# Thu Apr 17 13:44:58 2025 user.notice gl-switch: switch pressed
+# Thu Apr 17 13:44:58 2025 user.notice root: ACTION: on
+# Thu Apr 17 13:45:00 2025 user.notice gl-switch: switch released
+# Thu Apr 17 13:45:00 2025 user.notice root: ACTION: off
 ```
 
 ### Connect to internet WiFi event
