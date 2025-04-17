@@ -37,7 +37,7 @@ EOF
 ### Connect to internet WiFi event
 
 - [ ] Fire immediately when the router connects to a wireless network
-- [ ] Find out which band is used.
+- [ ] Find out which band is used
 - [ ] When the router reconnects this event should also fire
 
 ### Detect when there is internet available
@@ -47,10 +47,15 @@ EOF
 
 ### Change TX power
 
-- [ ] Change TX power settings per band for the access point side of the router.
+- [ ] Change TX power settings per band for the access point side of the router
 - [ ] Changes should reflect in the web UI immediately
 
 ### Enable/disable AP bands
 
-- [ ] Enable or disable WiFi bands for the access point side of the router.
+- [ ] Enable or disable WiFi bands for the access point side of the router
 - [ ] Changes should reflect in the web UI immediately
+
+### Which files survive firmware upgrades?
+
+- [ ] Project should be non-volatile
+- [ ] Files and settings should survive firmware upgrades
