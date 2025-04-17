@@ -182,6 +182,47 @@ ubus call repeater status
 # 	"dfs": false,
 # 	"bssid": "xxxx"
 # }
+# When connected to 5g:
+# {
+# 	"ssid": "Le Cafe Fokus",
+# 	"running": true,
+# 	"config": {
+# 		"ssid": "Le Cafe Fokus",
+# 		"protocol": "dhcp",
+# 		"key": "xxxx",
+# 		"remember": true,
+# 		"disguise": false,
+# 		"manual": false,
+# 		"auto_portal": false,
+# 		"macaddr": {
+# 			"mode": "random",
+# 			"update": "none",
+# 			"macaddr": "xxxx"
+# 		}
+# 	},
+# 	"channel": 100,
+# 	"state": 2,
+# 	"fail_type": "",
+# 	"device": "mt798112",
+# 	"portal": false,
+# 	"state_s": "connected",
+# 	"macaddr": "xxxx",
+# 	"connected": "20s",
+# 	"network": "wwan",
+# 	"ipv4": {
+# 		"dns": [
+# 			"192.168.1.1"
+# 		],
+# 		"gateway": "192.168.1.1",
+# 		"ip": "192.168.1.168/24"
+# 	},
+# 	"signal": -67,
+# 	"bare_mode": false,
+# 	"htmode": "HE80",
+# 	"dfs": true,
+# 	"bssid": "xxxx"
+# }
+
 ```
 
 - [ ] When the router reconnects this event should also fire
@@ -236,3 +277,5 @@ ubus call repeater status
 
 Single script that accepts both events as entrypoints. Implement single-instance with lock file. On new instance always kill
 old instance.
+
+TODO when portal is detected don't disable all interfaces.
