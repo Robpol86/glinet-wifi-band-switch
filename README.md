@@ -285,4 +285,4 @@ ubus call repeater status
 
 ## TODOs
 
-- When portal is detected don't disable all interfaces.
+- When portal is detected don't disable all interfaces (`grep portal /etc/rc.button/switch`)
