@@ -286,8 +286,18 @@ ubus call repeater status
 
 ### Enable/disable AP bands
 
-- [ ] Enable or disable WiFi bands for the access point side of the router
+- [x] Enable or disable WiFi bands for the access point side of the router
+
+```bash
+# Enable 5g (s/5g/2g/ for 2g):
+uci set wireless.wifi5g.disabled='0' && uci commit
+# TODO Option for guest network toggling: wireless.guest5g.disabled='0'
+# Disable s/0/1/
+```
+
 - [ ] Changes should reflect in the web UI immediately
+
+Does not, user has to refresh. Even two browser windows it won't update the other without refreshing.
 
 ### Which files survive firmware upgrades?
 
