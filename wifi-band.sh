@@ -14,7 +14,7 @@
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
 
-BASENAME="$(basename "$0")"
+BASENAME="wifi-band.sh"  # Hardcoding because $0 is sometimes /sbin/hotplug-call
 INPUT_IFUP_ACTION="${ACTION:-}"
 INPUT_IFUP_DEVICE="${DEVICE:-}"
 INPUT_IFUP_INTERFACE="${INTERFACE:-}"
@@ -75,5 +75,4 @@ else
 fi
 
 # TODOs:
-#   - hotplug-call instead of BASENAME
 #   - Unknown toggle switch action: iface
