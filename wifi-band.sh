@@ -100,3 +100,4 @@ fi
 # TODOs:
 #   - Unknown toggle switch action: iface
 #   - Single instance, new instance always instantly kills the old instance
+#       - Except when toggling OFF, that takes priority
