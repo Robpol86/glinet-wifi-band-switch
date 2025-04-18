@@ -14,15 +14,15 @@
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
 
-BASENAME=wifi-band  # Hardcoding because $0 is sometimes /sbin/hotplug-call
-HOTPLUG_D_IFACE_SYMLINK=/etc/hotplug.d/iface/10-wifi-band
+BASENAME=wifi-band  # Hardcoding because $0 is /sbin/hotplug-call when called from hotplug.d symlink.
+HOTPLUG_D_IFACE_SYMLINK="/etc/hotplug.d/iface/10-$BASENAME"
 TOGGLE_BAND_ONLY=false  # Set to true if you don't want to bring WiFi down until internet is available.
 
 # Log and print messages to stderr.
 _log() {
     level="$1";
     shift;
-    logger -s -t "$BASENAME""[$$]" -p "$level" "10-wifi-band: $*"
+    logger -s -t "$BASENAME""[$$]" -p "$level" "$*"
 }
 error() { _log err "$*"; }
 errex() { _log err "$*"; exit 1; }
@@ -34,7 +34,7 @@ debug() { _log debug "$*"; }
 enable_hotplug() {
     # TODO conditional
     debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
-    ln -f -s /etc/gl-switch.d/wifi-band.sh "$HOTPLUG_D_IFACE_SYMLINK"
+    ln -f -s "$0" "$HOTPLUG_D_IFACE_SYMLINK"
 }
 disable_hotplug() {
     if [ -L "$HOTPLUG_D_IFACE_SYMLINK" ]; then
@@ -111,3 +111,4 @@ fi
 #   - Single instance, new instance always instantly kills the old instance
 #       - Except when toggling OFF, that takes priority
 #       - Will gl-switch and hotplug.d block until script exits? Maybe only one race condition is possible: hotplug+switch
+#   - trap set -e with error to logger
