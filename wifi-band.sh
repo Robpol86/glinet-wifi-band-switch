@@ -73,8 +73,8 @@ do_wwan_disconnected() {
 }
 
 # Bad arguments.
-if printf '%s\n' "$@" |grep -qE '^(-h|--help)$'; then
-    errex "script not meant to be run by the user"
+if printf '%s\n' "$@" |grep -qE '^(-h|--help|help|[/-][?])$'; then
+    errex "more info: https://github.com/Robpol86/glinet-wifi-band-switch"
 elif [ $# -ne 1 ]; then
     errex "requires exactly 1 argument"
 elif [ "$1" != on ] && [ "$1" != off ] && [ "$1" != iface ]; then
