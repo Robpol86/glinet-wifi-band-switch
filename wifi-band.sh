@@ -48,6 +48,31 @@ is_assigned_to_switch() {
     uci get switch-button.@main[0].func 2>/dev/null |grep -q "^$BASENAME$"
 }
 
+# TODO
+do_toggled_on() {
+    info "Toggle switch ON"
+    enable_hotplug
+}
+
+# TODO
+do_toggled_off() {
+    info "Toggle switch OFF"
+    disable_hotplug
+}
+
+# TODO
+do_wwan_connected() {
+    debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
+    if [ $TOGGLE_BAND_ONLY != true ]; then
+        debug "TODO Wait for internet"
+    fi
+}
+
+# TODO
+do_wwan_disconnected() {
+    debug "ifdown: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
+}
+
 # Bad arguments.
 if printf '%s\n' "$@" |grep -qE '^(-h|--help)$'; then
     errex "script not meant to be run by the user"
@@ -59,7 +84,7 @@ elif [ "$1" = iface ]; then
     [ -n "${ACTION:-}" ] || errex "Missing ACTION variable"
     [ -n "${INTERFACE:-}" ] || errex "Missing INTERFACE variable"
     if [ "$INTERFACE" != wwan ]; then
-        debug "$INTERFACE not wwan, ignoring"
+        debug "INTERFACE=$INTERFACE not wwan, ignoring"
         exit 0
     fi
 fi
@@ -70,19 +95,16 @@ if ! is_assigned_to_switch; then
     errex "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
 fi
 if [ "$1" = on ]; then
-    info "Toggle switch ON"
-    enable_hotplug
+    do_toggled_on
 elif [ "$1" = off ]; then
-    info "Toggle switch OFF"
-    disable_hotplug
+    do_toggled_off
 elif [ "$ACTION" = ifup ]; then
-    debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
+    do_wwan_connected
 elif [ "$ACTION" = ifdown ]; then
-    debug "ifdown: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
-elif [ -n "$ACTION" ]; then
-    error "Unknown action: $ACTION"
-    usage
-    exit 2
+    do_wwan_disconnected
+else
+    debug "ACTION=$ACTION not ifup|ifdown, ignoring"
+    exit 0
 fi
 
 # TODOs:
