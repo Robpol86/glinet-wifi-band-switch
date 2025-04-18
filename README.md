@@ -92,7 +92,7 @@ uci get switch-button.@main[0].func |grep -q '^wifi-band$'
 ```bash
 tee /etc/hotplug.d/iface/11-wifi-band <<'EOF'
 #!/bin/sh
-logger "wifi-band INTERFACE='$INTERFACE' ACTION='$ACTION' DEVICE='$DEVICE'"
+logger "11-wifi-band INTERFACE='$INTERFACE' ACTION='$ACTION' DEVICE='$DEVICE'"
 date >> /tmp/dump.txt
 env >> /tmp/dump.txt
 EOF
@@ -312,6 +312,14 @@ Does not, user has to refresh. Even two browser windows it won't update the othe
 
 - [ ] Project should be non-volatile
 - [ ] Files and settings should survive firmware upgrades
+
+## Debugging Tips
+
+I use this to read logs quickly since there's no `ctrl+r` in ASH.
+
+```bash
+lr () ( set -x; logread -e wifi-band -f; )
+```
 
 ## TODOs
 
