@@ -32,9 +32,8 @@ debug() { _log debug "$*"; }
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
 enable_hotplug() {
-    # TODO conditional
     debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
-    ln -f -s "$0" "$HOTPLUG_D_IFACE_SYMLINK"
+    ln -f -s "$0" "$HOTPLUG_D_IFACE_SYMLINK" || errex "Failed to create symlink $HOTPLUG_D_IFACE_SYMLINK"
 }
 disable_hotplug() {
     if [ -L "$HOTPLUG_D_IFACE_SYMLINK" ]; then
