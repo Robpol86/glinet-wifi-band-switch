@@ -281,7 +281,16 @@ ubus call repeater status
 
 ### Change TX power
 
-- [ ] Change TX power settings per band for the access point side of the router
+> Do not implement, changing power even though the web UI won't nudge clients off the lower power SSID.
+
+- [x] Change TX power settings per band for the access point side of the router
+
+```bash
+dev="$(uci get wireless.wifi5g.device)"
+uci set "wireless.$dev.txpower=30" && uci commit  # 30 == low, 100 == max
+# TODO store original value in custom uci variable.
+```
+
 - [ ] Changes should reflect in the web UI immediately
 
 ### Enable/disable AP bands
