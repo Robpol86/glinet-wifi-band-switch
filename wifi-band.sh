@@ -14,18 +14,15 @@
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
 
-BASENAME="wifi-band.sh"  # Hardcoding because $0 is sometimes /sbin/hotplug-call
-INPUT_IFUP_ACTION="${ACTION:-}"
-INPUT_IFUP_DEVICE="${DEVICE:-}"
-INPUT_IFUP_INTERFACE="${INTERFACE:-}"
-INPUT_TOGGLE="${1:-}"
+BASENAME=wifi-band  # Hardcoding because $0 is sometimes /sbin/hotplug-call
+HOTPLUG_D_IFACE_SYMLINK=/etc/hotplug.d/iface/10-wifi-band
 TOGGLE_BAND_ONLY=false  # Set to true if you don't want to bring WiFi down until internet is available.
 
 # Log and print messages to stderr.
 _log() {
     level="$1";
     shift;
-    logger -s -t "$BASENAME[$$]" -p "$level" "$*"
+    logger -s -t "$BASENAME[$$]" -p "$level" "10-wifi-band: $*"
 }
 error() { _log err "$*"; }
 errex() { _log err "$*"; exit 1; }
@@ -33,30 +30,55 @@ warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
 
-# Print usage to stderr and exit.
+# Print usage to stderr.
 usage() {
-    echo "Usage: $BASENAME [on|off]" >&2
-    echo "Usage: ACTION=[ifup|ifdown] $BASENAME" >&2
+cat >&2 <<EOF
+usage: $BASENAME -h
+       $BASENAME on
+       $BASENAME off
+       $BASENAME iface
+EOF
 }
 
-# Finish installing script.
-install() {
+# Enable/disable being called when the WWAN interface connects or disconnects.
+enable() {
     # TODO conditional
-    debug "Creating /etc/hotplug.d/iface/10-wifi-band symlink"
-    ln -f -s /etc/gl-switch.d/wifi-band.sh /etc/hotplug.d/iface/10-wifi-band
+    debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
+    ln -f -s /etc/gl-switch.d/wifi-band.sh "$HOTPLUG_D_IFACE_SYMLINK"
+}
+disable() {
+    if [ -L "$HOTPLUG_D_IFACE_SYMLINK" ]; then
+        debug "Removing $HOTPLUG_D_IFACE_SYMLINK symlink"
+        rm -f "$HOTPLUG_D_IFACE_SYMLINK"
+    fi
 }
 
-# Main.
+# Returns 0 if script enabled in web UI.
+is_enabled() {
+    uci get switch-button.@main[0].func 2>/dev/null |grep -q "^$BASENAME$"
+}
+
+# Usage.
 if printf '%s\n' "$@" |grep -qE '^(-h|--help)$'; then
     usage
     exit 0
+elif [ $# -ne 1 ]; then
+    echo "need exactly one argument" >&2
+    exit 2
 fi
-install
-if [ "$INPUT_TOGGLE" = on ]; then
+
+# Main
+if ! is_enabled; then
+    error "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
+    exit 1
+fi
+if [ "$MODE" = on ]; then
     debug "Toggle switch ON"
-elif [ "$INPUT_TOGGLE" = off ]; then
+    enable
+elif [ "$MODE" = off ]; then
     debug "Toggle switch OFF"
-elif [ -n "$INPUT_TOGGLE" ]; then
+    disable
+elif [ -n "$MODE" ]; then
     error "Unknown toggle switch action: $1"
     usage
     exit 2
@@ -65,6 +87,7 @@ elif [ "$INPUT_IFUP_ACTION" = ifup ]; then
 elif [ "$INPUT_IFUP_ACTION" = ifdown ]; then
     debug "ifdown: ACTION=$INPUT_IFUP_ACTION DEVICE=$INPUT_IFUP_DEVICE INTERFACE=$INPUT_IFUP_INTERFACE"
 elif [ -n "$INPUT_IFUP_ACTION" ]; then
+    set > "/tmp/$BASENAME.txt"  # TODO remove
     error "Unknown action: $INPUT_IFUP_ACTION"
     usage
     exit 2
