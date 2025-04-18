@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# TODO.
+# TODO save to /etc/hotplug.d/iface/10-wifi-band
+# TODO ln -s /etc/hotplug.d/iface/10-wifi-band /etc/gl-switch.d/wifi-band.sh
 
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
@@ -26,4 +27,7 @@ if [ -n "$INPUT_TOGGLE" ]; then
     debug "Toggle switch action: $1"
 elif [ "$INPUT_IFUP_ACTION" = "ifup" ]; then
     debug "ifup: ACTION=$INPUT_IFUP_ACTION DEVICE=$INPUT_IFUP_DEVICE INTERFACE=$INPUT_IFUP_INTERFACE"
+else
+    debug "Unknown action"
+    env > /tmp/dump.txt
 fi

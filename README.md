@@ -90,13 +90,13 @@ uci get switch-button.@main[0].func |grep -q '^wifi-band$'
 - [x] Fire immediately when the router connects to a wireless network
 
 ```bash
-tee /etc/hotplug.d/iface/10-wifi-band <<'EOF'
+tee /etc/hotplug.d/iface/11-wifi-band <<'EOF'
 #!/bin/sh
 logger "wifi-band INTERFACE='$INTERFACE' ACTION='$ACTION' DEVICE='$DEVICE'"
 date >> /tmp/dump.txt
 env >> /tmp/dump.txt
 EOF
-chmod +x /etc/hotplug.d/iface/10-wifi-band
+chmod +x /etc/hotplug.d/iface/11-wifi-band
 
 # Above logged this when I manually reconnected to a coffee shop wifi network:
 # Thu Apr 17 14:21:15 2025 user.notice root: wifi-band INTERFACE='wwan' ACTION='ifdown' DEVICE=''
