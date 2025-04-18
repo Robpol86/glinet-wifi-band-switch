@@ -90,13 +90,13 @@ uci get switch-button.@main[0].func |grep -q '^wifi-band$'
 - [x] Fire immediately when the router connects to a wireless network
 
 ```bash
-tee /etc/hotplug.d/iface/10-wifi-band <<'EOF'
+tee /etc/hotplug.d/iface/11-wifi-band <<'EOF'
 #!/bin/sh
-logger "wifi-band INTERFACE='$INTERFACE' ACTION='$ACTION' DEVICE='$DEVICE'"
+logger "11-wifi-band INTERFACE='$INTERFACE' ACTION='$ACTION' DEVICE='$DEVICE'"
 date >> /tmp/dump.txt
 env >> /tmp/dump.txt
 EOF
-chmod +x /etc/hotplug.d/iface/10-wifi-band
+chmod +x /etc/hotplug.d/iface/11-wifi-band
 
 # Above logged this when I manually reconnected to a coffee shop wifi network:
 # Thu Apr 17 14:21:15 2025 user.notice root: wifi-band INTERFACE='wwan' ACTION='ifdown' DEVICE=''
@@ -312,6 +312,14 @@ Does not, user has to refresh. Even two browser windows it won't update the othe
 
 - [ ] Project should be non-volatile
 - [ ] Files and settings should survive firmware upgrades
+
+## Debugging Tips
+
+I use this to read logs quickly since there's no `ctrl+r` in ASH.
+
+```bash
+lr () ( set -x; logread -e wifi-band -f; )
+```
 
 ## TODOs
 
