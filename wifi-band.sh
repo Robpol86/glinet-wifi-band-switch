@@ -110,3 +110,4 @@ fi
 # TODOs:
 #   - Single instance, new instance always instantly kills the old instance
 #       - Except when toggling OFF, that takes priority
+#       - Will gl-switch and hotplug.d block until script exits? Maybe only one race condition is possible: hotplug+switch
