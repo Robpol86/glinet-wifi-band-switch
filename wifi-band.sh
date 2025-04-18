@@ -22,7 +22,7 @@ TOGGLE_BAND_ONLY=false  # Set to true if you don't want to bring WiFi down until
 _log() {
     level="$1";
     shift;
-    logger -s -t "$BASENAME[$$]" -p "$level" "10-wifi-band: $*"
+    logger -s -t "$BASENAME""[$$]" -p "$level" "10-wifi-band: $*"
 }
 error() { _log err "$*"; }
 errex() { _log err "$*"; exit 1; }
@@ -30,23 +30,13 @@ warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
 
-# Print usage to stderr.
-usage() {
-cat >&2 <<EOF
-usage: $BASENAME -h
-       $BASENAME on
-       $BASENAME off
-       $BASENAME iface
-EOF
-}
-
 # Enable/disable being called when the WWAN interface connects or disconnects.
-enable() {
+enable_hotplug() {
     # TODO conditional
     debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
     ln -f -s /etc/gl-switch.d/wifi-band.sh "$HOTPLUG_D_IFACE_SYMLINK"
 }
-disable() {
+disable_hotplug() {
     if [ -L "$HOTPLUG_D_IFACE_SYMLINK" ]; then
         debug "Removing $HOTPLUG_D_IFACE_SYMLINK symlink"
         rm -f "$HOTPLUG_D_IFACE_SYMLINK"
@@ -54,50 +44,47 @@ disable() {
 }
 
 # Returns 0 if script enabled in web UI.
-is_enabled() {
+is_assigned_to_switch() {
     uci get switch-button.@main[0].func 2>/dev/null |grep -q "^$BASENAME$"
 }
 
-# Usage.
+# Bad arguments.
 if printf '%s\n' "$@" |grep -qE '^(-h|--help)$'; then
-    usage
-    exit 0
+    errex "script not meant to be run by the user"
 elif [ $# -ne 1 ]; then
-    echo "need exactly one argument" >&2
-    exit 2
+    errex "requires exactly 1 argument"
+elif [ "$1" != on ] && [ "$1" != off ] && [ "$1" != iface ]; then
+    errex "bad argument, expected on|off|iface but got $1"
+elif [ "$1" = iface ]; then
+    [ -n "${ACTION:-}" ] || errex "Missing ACTION variable"
+    [ -n "${INTERFACE:-}" ] || errex "Missing INTERFACE variable"
+    if [ "$INTERFACE" != wwan ]; then
+        debug "$INTERFACE not wwan, ignoring"
+        exit 0
+    fi
 fi
 
 # Main
-if ! is_enabled; then
-    error "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
-    exit 1
+if ! is_assigned_to_switch; then
+    disable_hotplug
+    errex "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
 fi
-if [ "$MODE" = on ]; then
-    debug "Toggle switch ON"
-    enable
-elif [ "$MODE" = off ]; then
-    debug "Toggle switch OFF"
-    disable
-elif [ -n "$MODE" ]; then
-    error "Unknown toggle switch action: $1"
-    usage
-    exit 2
-elif [ "$INPUT_IFUP_ACTION" = ifup ]; then
-    debug "ifup: ACTION=$INPUT_IFUP_ACTION DEVICE=$INPUT_IFUP_DEVICE INTERFACE=$INPUT_IFUP_INTERFACE"
-elif [ "$INPUT_IFUP_ACTION" = ifdown ]; then
-    debug "ifdown: ACTION=$INPUT_IFUP_ACTION DEVICE=$INPUT_IFUP_DEVICE INTERFACE=$INPUT_IFUP_INTERFACE"
-elif [ -n "$INPUT_IFUP_ACTION" ]; then
-    set > "/tmp/$BASENAME.txt"  # TODO remove
-    error "Unknown action: $INPUT_IFUP_ACTION"
-    usage
-    exit 2
-else
-    set > "/tmp/$BASENAME.txt"  # TODO remove
+if [ "$1" = on ]; then
+    info "Toggle switch ON"
+    enable_hotplug
+elif [ "$1" = off ]; then
+    info "Toggle switch OFF"
+    disable_hotplug
+elif [ "$ACTION" = ifup ]; then
+    debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
+elif [ "$ACTION" = ifdown ]; then
+    debug "ifdown: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
+elif [ -n "$ACTION" ]; then
+    error "Unknown action: $ACTION"
     usage
     exit 2
 fi
 
 # TODOs:
-#   - Unknown toggle switch action: iface
 #   - Single instance, new instance always instantly kills the old instance
 #       - Except when toggling OFF, that takes priority
