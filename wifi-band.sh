@@ -71,14 +71,17 @@ get_current_band() {
 
 # Wait until there is internet available. Blocks indefinitely on portal.
 is_online() {
-    timeout 1 ping -c1 google.com >/dev/null 2>&1
+    if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
+        timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1
+    else
+        timeout 1 ping -c1 google.com >/dev/null 2>&1
+    fi
 }
 wait_for_online() {
     until is_online; do
         debug "Waiting for internet"
         sleep 1
     done
-    info "Internet detected"
 }
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
@@ -137,6 +140,7 @@ do_toggled_on() {
         disable_5g
         wait_for_online
     fi
+    info "Internet detected"
     great_decider
 }
 
@@ -144,6 +148,7 @@ do_toggled_on() {
 do_wwan_connected() {
     info "WWAN interface connected"
     wait_for_online
+    info "Internet detected"
     great_decider
 }
 
