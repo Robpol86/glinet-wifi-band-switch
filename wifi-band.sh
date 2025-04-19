@@ -30,6 +30,65 @@ warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
 
+# Ensure script runs once at a time.
+single_instance() {
+    : # TODO if priority is running kill self, else kill other instance
+}
+single_instance_priority() {
+    : # TODO kill all other instances and run this one
+}
+
+# Returns 0 if $TOGGLE_BAND_ONLY == true
+toggle_band_only() {
+    [ $TOGGLE_BAND_ONLY = true ]
+}
+
+# Wrapper for `uci set`.
+uci_set() {
+    debug "uci set $1"
+    uci set "$1"
+    debug "uci commit"
+    uci commit
+}
+
+# Enable/disable repeater bands.
+enable_2g() {
+    info "Enabling wifi2g"
+    uci_set "wireless.wifi2g.disabled='0'"
+}
+enable_5g() {
+    info "Enabling wifi5g"
+    uci_set "wireless.wifi5g.disabled='0'"
+}
+disable_2g() {
+    info "Disabling wifi2g"
+    uci_set "wireless.wifi2g.disabled='1'"
+}
+disable_5g() {
+    info "Disabling wifi5g"
+    uci_set "wireless.wifi5g.disabled='1'"
+}
+
+# Wrapper for `ubus call`.
+ubus_call() {
+    output="$(ubus call "$@" |jsonfilter -e @)"
+    debug "ubus call $*: $output"
+    echo "$output"
+}
+
+# Wait for repeater to connect and then get the band it's using.
+get_current_band() {
+    until ubus_call repeater status |jsonfilter -e @.state_s |grep -q '^connected$'; do
+        sleep 1
+    done
+    # TODO wireless.mt798112.band |grep -E '^(2g|5g)$' || true
+}
+
+# TODO
+wait_for_online() {
+    : # TODO until timeout ping; do sleep; done
+}
+
 # Enable/disable being called when the WWAN interface connects or disconnects.
 enable_hotplug() {
     debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
@@ -44,6 +103,7 @@ disable_hotplug() {
 
 # Returns 0 if script enabled in web UI.
 is_assigned_to_switch() {
+    # TODO uci_get wrapper with debug logging
     uci get switch-button.@main[0].func 2>/dev/null |grep -q "^$BASENAME$"
 }
 
@@ -51,6 +111,8 @@ is_assigned_to_switch() {
 do_toggled_off() {
     info "Toggle switch OFF"
     disable_hotplug
+    enable_2g
+    enable_5g
 }
 
 # TODO
@@ -62,14 +124,17 @@ do_toggled_on() {
 # TODO
 do_wwan_connected() {
     debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
-    if [ $TOGGLE_BAND_ONLY != true ]; then
+    if ! toggle_band_only; then
         debug "TODO Wait for internet"
     fi
 }
 
-# TODO
+# If wwan disconnected
 do_wwan_disconnected() {
-    debug "ifdown: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
+    if ! toggle_band_only; then
+        disable_2g
+        disable_5g
+    fi
 }
 
 # Bad arguments.
@@ -94,12 +159,16 @@ if ! is_assigned_to_switch; then
     errex "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
 fi
 if [ "$1" = off ]; then
+    single_instance_priority # In case hotplug runs at the same time switch is toggled off
     do_toggled_off
 elif [ "$1" = on ]; then
+    single_instance
     do_toggled_on
 elif [ "$ACTION" = ifup ]; then
+    single_instance
     do_wwan_connected
 elif [ "$ACTION" = ifdown ]; then
+    single_instance
     do_wwan_disconnected
 else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
