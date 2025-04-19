@@ -99,23 +99,9 @@ is_assigned_to_switch() {
     uci get switch-button.@main[0].func 2>/dev/null |grep -q "^$BASENAME$"
 }
 
-# TODO
-do_toggled_off() {
-    info "Toggle switch OFF"
-    enable_2g
-    enable_5g
-}
-
-# TODO
-do_toggled_on() {
-    info "Toggle switch ON"
-    if ! is_online; then
-        info "No internet, stopping wifi"
-        disable_2g
-        disable_5g
-        wait_for_online
-    fi
-    band="$(get_current_band)"
+# Toggles on/off the same band used to connect to the internet.
+great_decider() {
+    band="$(get_current_band)"  # Blocks until WiFi connected.
     case "$band" in
     2g)
         enable_5g
@@ -133,14 +119,33 @@ do_toggled_on() {
     esac
 }
 
-# TODO
-do_wwan_connected() {
-    info "WWAN interface connected"
-    debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
-    debug "TODO Wait for internet"
+# Main action when user toggles the switch OFF (also called on boot with the initial switch state of OFF).
+do_toggled_off() {
+    info "Toggle switch OFF"
+    enable_2g
+    enable_5g
 }
 
-# If wwan disconnected
+# Main action when user toggles the switch ON (also called on boot with the initial switch state of ON).
+do_toggled_on() {
+    info "Toggle switch ON"
+    if ! is_online; then
+        info "No internet, stopping wifi"
+        disable_2g
+        disable_5g
+        wait_for_online
+    fi
+    great_decider
+}
+
+# Main action when the repeater connects to a WiFi network.
+do_wwan_connected() {
+    info "WWAN interface connected"
+    wait_for_online
+    great_decider
+}
+
+# Main action when the repeater loses connection.
 do_wwan_disconnected() {
     info "WWAN interface disconnected"
     disable_2g
