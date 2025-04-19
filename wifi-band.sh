@@ -40,19 +40,21 @@ single_instance_priority() {
 # Enable/disable repeater bands.
 enable_2g() {
     info "Enabling wifi2g"
-    uci set wireless.wifi2g.disabled='0' && uci commit
+    uci set wireless.wifi2g.disabled=0 && uci commit wireless
+    wifi
 }
 enable_5g() {
     info "Enabling wifi5g"
-    uci set wireless.wifi5g.disabled='0' && uci commit
+    uci set wireless.wifi5g.disabled=0 && uci commit wireless
+    wifi
 }
 disable_2g() {
     info "Disabling wifi2g"
-    uci set wireless.wifi2g.disabled='1' && uci commit
+    uci set wireless.wifi2g.disabled=1 && uci commit wireless
 }
 disable_5g() {
     info "Disabling wifi5g"
-    uci set wireless.wifi5g.disabled='1' && uci commit
+    uci set wireless.wifi5g.disabled=1 && uci commit wireless
 }
 
 # Wait for repeater to connect and then get the band it's using.
@@ -62,7 +64,6 @@ get_current_band() {
         sleep 1
     done
     device="$(ubus call repeater status |jsonfilter -e @.device)"
-    debug "Conencted using $device"
     band="$(uci get "wireless.$device.band")"
     info "Connected on band $band"
     echo "$band"
@@ -77,6 +78,7 @@ wait_for_online() {
         debug "Waiting for internet"
         sleep 1
     done
+    info "Internet detected"
 }
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
