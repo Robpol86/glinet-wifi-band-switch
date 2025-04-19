@@ -15,5 +15,14 @@ jobs:
       - name: Dependencies
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
+      - name: Setup Bats
+        id: setup-bats
+        uses: bats-core/bats-action@3.0.1
+
+      - name: Test
+        env:
+          BATS_LIB_PATH: ${{ steps.setup-bats.outputs.lib-path }}
+        run: bats tests
+
       - name: Lint
         run: shellcheck wifi-band.sh
