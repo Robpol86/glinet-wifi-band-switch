@@ -16,7 +16,6 @@ set -o nounset  # Treat unset variables as errors and exit immediately.
 
 BASENAME=wifi-band  # Hardcoding because $0 is /sbin/hotplug-call when called from hotplug.d symlink.
 HOTPLUG_D_IFACE_SYMLINK="/etc/hotplug.d/iface/10-$BASENAME"
-TOGGLE_BAND_ONLY=false  # Set to true if you don't want to bring WiFi down until internet is available.
 
 # Log and print messages to stderr.
 _log() {
@@ -38,55 +37,43 @@ single_instance_priority() {
     : # TODO kill all other instances and run this one
 }
 
-# Returns 0 if $TOGGLE_BAND_ONLY == true
-toggle_band_only() {
-    [ $TOGGLE_BAND_ONLY = true ]
-}
-
-# Wrapper for `uci set`.
-uci_set() {
-    debug "uci set $1"
-    uci set "$1"
-    debug "uci commit"
-    uci commit
-}
-
 # Enable/disable repeater bands.
 enable_2g() {
     info "Enabling wifi2g"
-    uci_set "wireless.wifi2g.disabled='0'"
+    uci set wireless.wifi2g.disabled='0' && uci commit
 }
 enable_5g() {
     info "Enabling wifi5g"
-    uci_set "wireless.wifi5g.disabled='0'"
+    uci set wireless.wifi5g.disabled='0' && uci commit
 }
 disable_2g() {
     info "Disabling wifi2g"
-    uci_set "wireless.wifi2g.disabled='1'"
+    uci set wireless.wifi2g.disabled='1' && uci commit
 }
 disable_5g() {
     info "Disabling wifi5g"
-    uci_set "wireless.wifi5g.disabled='1'"
-}
-
-# Wrapper for `ubus call`.
-ubus_call() {
-    output="$(ubus call "$@" |jsonfilter -e @)"
-    debug "ubus call $*: $output"
-    echo "$output"
+    uci set wireless.wifi5g.disabled='1' && uci commit
 }
 
 # Wait for repeater to connect and then get the band it's using.
 get_current_band() {
-    until ubus_call repeater status |jsonfilter -e @.state_s |grep -q '^connected$'; do
+    until ubus call repeater status |jsonfilter -e @.state_s |grep -q '^connected$'; do
+        debug "Waiting for repeater to connect"
         sleep 1
     done
-    # TODO wireless.mt798112.band |grep -E '^(2g|5g)$' || true
+    device="$(ubus call repeater status |jsonfilter -e @.device)"
+    debug "Conencted using $device"
+    band="$(uci get "wireless.$device.band")"
+    info "Connected on band $band"
+    echo "$band"
 }
 
-# TODO
+# Wait until there is internet available. Blocks indefinitely on portal.
 wait_for_online() {
-    : # TODO until timeout ping; do sleep; done
+    until timeout 1 ping -c1 google.com >/dev/null 2>&1; do
+        debug "Waiting for internet"
+        sleep 1
+    done
 }
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
@@ -103,7 +90,6 @@ disable_hotplug() {
 
 # Returns 0 if script enabled in web UI.
 is_assigned_to_switch() {
-    # TODO uci_get wrapper with debug logging
     uci get switch-button.@main[0].func 2>/dev/null |grep -q "^$BASENAME$"
 }
 
@@ -124,17 +110,13 @@ do_toggled_on() {
 # TODO
 do_wwan_connected() {
     debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
-    if ! toggle_band_only; then
-        debug "TODO Wait for internet"
-    fi
+    debug "TODO Wait for internet"
 }
 
 # If wwan disconnected
 do_wwan_disconnected() {
-    if ! toggle_band_only; then
-        disable_2g
-        disable_5g
-    fi
+    disable_2g
+    disable_5g
 }
 
 # Bad arguments.
