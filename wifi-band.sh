@@ -82,10 +82,13 @@ enable_hotplug() {
     ln -f -s "$0" "$HOTPLUG_D_IFACE_SYMLINK" || errex "Failed to create symlink $HOTPLUG_D_IFACE_SYMLINK"
 }
 disable_hotplug() {
-    if [ -L "$HOTPLUG_D_IFACE_SYMLINK" ]; then
+    if [ -e "$HOTPLUG_D_IFACE_SYMLINK" ]; then
         debug "Removing $HOTPLUG_D_IFACE_SYMLINK symlink"
         rm -f "$HOTPLUG_D_IFACE_SYMLINK"
     fi
+}
+is_hotplug_enabled() {
+    [ -e "$HOTPLUG_D_IFACE_SYMLINK" ]
 }
 
 # Returns 0 if script enabled in web UI.
@@ -96,7 +99,6 @@ is_assigned_to_switch() {
 # TODO
 do_toggled_off() {
     info "Toggle switch OFF"
-    disable_hotplug
     enable_2g
     enable_5g
 }
@@ -104,17 +106,18 @@ do_toggled_off() {
 # TODO
 do_toggled_on() {
     info "Toggle switch ON"
-    enable_hotplug
 }
 
 # TODO
 do_wwan_connected() {
+    info "WWAN interface connected"
     debug "ifup: ACTION=$ACTION DEVICE=${DEVICE:-} INTERFACE=$INTERFACE"
     debug "TODO Wait for internet"
 }
 
 # If wwan disconnected
 do_wwan_disconnected() {
+    info "WWAN interface disconnected"
     disable_2g
     disable_5g
 }
@@ -142,23 +145,21 @@ if ! is_assigned_to_switch; then
 fi
 if [ "$1" = off ]; then
     single_instance_priority # In case hotplug runs at the same time switch is toggled off
+    disable_hotplug
     do_toggled_off
 elif [ "$1" = on ]; then
     single_instance
+    enable_hotplug
     do_toggled_on
 elif [ "$ACTION" = ifup ]; then
     single_instance
+    is_hotplug_enabled || errex "Hotplug no longer enabled" # In case hotplug-call queued instances after toggled off
     do_wwan_connected
 elif [ "$ACTION" = ifdown ]; then
     single_instance
+    is_hotplug_enabled || errex "Hotplug no longer enabled"
     do_wwan_disconnected
 else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
-
-# TODOs:
-#   - Single instance, new instance always instantly kills the old instance
-#       - Except when toggling OFF, that takes priority
-#       - gl-switch and hotplug both block and queue, so max of 2 instances expected
-#   - trap set -e with error to logger
