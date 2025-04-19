@@ -48,15 +48,15 @@ is_assigned_to_switch() {
 }
 
 # TODO
-do_toggled_on() {
-    info "Toggle switch ON"
-    enable_hotplug
-}
-
-# TODO
 do_toggled_off() {
     info "Toggle switch OFF"
     disable_hotplug
+}
+
+# TODO
+do_toggled_on() {
+    info "Toggle switch ON"
+    enable_hotplug
 }
 
 # TODO
@@ -93,10 +93,10 @@ if ! is_assigned_to_switch; then
     disable_hotplug
     errex "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
 fi
-if [ "$1" = on ]; then
-    do_toggled_on
-elif [ "$1" = off ]; then
+if [ "$1" = off ]; then
     do_toggled_off
+elif [ "$1" = on ]; then
+    do_toggled_on
 elif [ "$ACTION" = ifup ]; then
     do_wwan_connected
 elif [ "$ACTION" = ifdown ]; then
