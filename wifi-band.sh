@@ -126,14 +126,12 @@ great_decider() {
 
 # Main action when user toggles the switch OFF (also called on boot with the initial switch state of OFF).
 do_toggled_off() {
-    info "Toggle switch OFF"
     enable_2g
     enable_5g
 }
 
 # Main action when user toggles the switch ON (also called on boot with the initial switch state of ON).
 do_toggled_on() {
-    info "Toggle switch ON"
     if ! is_online; then
         info "No internet, stopping wifi"
         disable_2g
@@ -146,7 +144,6 @@ do_toggled_on() {
 
 # Main action when the repeater connects to a WiFi network.
 do_wwan_connected() {
-    info "WWAN interface connected"
     wait_for_online
     info "Internet detected"
     great_decider
@@ -154,7 +151,6 @@ do_wwan_connected() {
 
 # Main action when the repeater loses connection.
 do_wwan_disconnected() {
-    info "WWAN interface disconnected"
     disable_2g
     disable_5g
 }
@@ -175,25 +171,32 @@ elif [ "$1" = iface ]; then
     fi
 fi
 
+# Single instance.
+if [ "$1" = off ]; then
+    single_instance_priority # In case hotplug runs at the same time switch is toggled off
+else
+    single_instance # May block if priority instance is running.
+fi
+
 # Main
 if ! is_assigned_to_switch; then
     disable_hotplug
     errex "Not enabled. In the web UI go to System > Toggle Button Settings to enable."
 fi
 if [ "$1" = off ]; then
-    single_instance_priority # In case hotplug runs at the same time switch is toggled off
+    info "Toggle switch OFF"
     disable_hotplug
     do_toggled_off
 elif [ "$1" = on ]; then
-    single_instance
+    info "Toggle switch ON"
     enable_hotplug
     do_toggled_on
 elif [ "$ACTION" = ifup ]; then
-    single_instance
+    info "WWAN interface connected"
     is_hotplug_enabled || errex "Hotplug no longer enabled" # In case hotplug-call queued instances after toggled off
     do_wwan_connected
 elif [ "$ACTION" = ifdown ]; then
-    single_instance
+    info "WWAN interface disconnected"
     is_hotplug_enabled || errex "Hotplug no longer enabled"
     do_wwan_disconnected
 else
