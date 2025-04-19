@@ -203,3 +203,6 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
+
+# TODOs:
+#   - Look into allowing new instances to run without blocking hotplug and gl-switch.
