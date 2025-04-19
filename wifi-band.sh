@@ -71,6 +71,7 @@ get_current_band() {
 
 # Wait until there is internet available. Blocks indefinitely on portal.
 is_online() {
+    # TODO does not go through the VPN
     timeout 1 ping -c1 google.com >/dev/null 2>&1
 }
 wait_for_online() {
