@@ -69,8 +69,11 @@ get_current_band() {
 }
 
 # Wait until there is internet available. Blocks indefinitely on portal.
+is_online() {
+    timeout 1 ping -c1 google.com >/dev/null 2>&1
+}
 wait_for_online() {
-    until timeout 1 ping -c1 google.com >/dev/null 2>&1; do
+    until is_online; do
         debug "Waiting for internet"
         sleep 1
     done
@@ -106,6 +109,28 @@ do_toggled_off() {
 # TODO
 do_toggled_on() {
     info "Toggle switch ON"
+    if ! is_online; then
+        info "No internet, stopping wifi"
+        disable_2g
+        disable_5g
+        wait_for_online
+    fi
+    band="$(get_current_band)"
+    case "$band" in
+    2g)
+        enable_5g
+        disable_2g
+        ;;
+    5g)
+        enable_2g
+        disable_5g
+        ;;
+    *)
+        error "Unexpected band: $band"
+        enable_2g
+        enable_5g
+        ;;
+    esac
 }
 
 # TODO
