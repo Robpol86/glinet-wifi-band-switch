@@ -89,7 +89,7 @@ enable_hotplug() {
     debug "Creating $HOTPLUG_SCRIPT"
     { cat > "$HOTPLUG_SCRIPT" <<EOF
 #!/bin/sh
-$0 &
+"$0" \$@ &
 EOF
     } || errex "Failed to create $HOTPLUG_SCRIPT"
     chmod +x "$HOTPLUG_SCRIPT" || errex "Failed to make $HOTPLUG_SCRIPT executable"
