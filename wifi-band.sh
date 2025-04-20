@@ -18,6 +18,7 @@ BASENAME="$(basename "${0%.*}")"
 HOTPLUG_SCRIPT="/etc/hotplug.d/iface/10-$BASENAME"
 LOCKFILE="/var/lock/$BASENAME.lock"
 PIDFILE="/var/run/$BASENAME.pid"
+LOCKTIMEOUT=10
 
 # Log and print messages to stderr.
 _log() {
@@ -33,27 +34,28 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    debug called before exec, "$PIDFILE" has current contents: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
-    exec 99>"$LOCKFILE"
-    debug opened "$PIDFILE" has current contents: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
-    until flock -n 99; do
-        debug flock exited 1  # TODO remove
+    starttime="$(date +%s)"
+    killfailed=
+    exec 9>"$LOCKFILE"
+    until flock -n 9; do
         # Priority instances can kill all but non-priority exit if priority is running.
         if [ "${1:-}" != priority ] && grep -q priority "$PIDFILE"; then
             errex "Priority instance running"
         fi
         # Get other instance PID and kill it.
-        if target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
-            debug got pid "$target_pid"  # TODO remove
-            debug "killing other instance $target_pid"
-            kill -9 "-$target_pid" 2>/dev/null || debug kill failed # TODO better debug message
+        if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
+            debug "Killing other instance $target_pid"
+            kill -9 "-$target_pid" 2>/dev/null || { warning "Kill failed with $?"; killfailed=1; }
         fi
+        # Timeout.
+        now="$(date +%s)"
+        if [ $(( (now - starttime) )) -gt "$LOCKTIMEOUT" ]; then
+            errex "Timed out waiting for lock"
+        fi
+        # Sleep.
         usleep 250000
-        debug end of iteration  # TODO remove
     done
-    debug out of loop  # TODO remove
     [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
-    debug wrote "$$" to "$PIDFILE" here: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
 }
 
 # Enable/disable repeater bands.
