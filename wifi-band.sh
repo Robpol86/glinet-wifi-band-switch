@@ -33,14 +33,6 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    if [ "${1:-}" = clean ]; then
-        debug CLEAN  # TODO remove
-        rm "$PIDFILE"
-        flock -u 99
-        exec 99>&-
-        return
-    fi
-    trap "single_instance clean" INT TERM EXIT
     debug called before exec, "$PIDFILE" has current contents: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
     exec 99>"$LOCKFILE"
     debug opened "$PIDFILE" has current contents: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
@@ -54,9 +46,9 @@ single_instance() {
         if target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
             debug got pid "$target_pid"  # TODO remove
             debug "killing other instance $target_pid"
-            kill -SIGTERM "$target_pid" 2>/dev/null || debug kill failed # TODO better debug message
+            kill -9 "-$target_pid" 2>/dev/null || debug kill failed # TODO better debug message
         fi
-        sleep 1  # TODO usleep 100000
+        usleep 250000
         debug end of iteration  # TODO remove
     done
     debug out of loop  # TODO remove
