@@ -17,6 +17,7 @@ set -o nounset  # Treat unset variables as errors and exit immediately.
 BASENAME="$(basename "${0%.*}")"
 HOTPLUG_SCRIPT="/etc/hotplug.d/iface/10-$BASENAME"
 LOCKFILE="/var/lock/$BASENAME.lock"
+PIDFILE="/var/run/$BASENAME.pid"
 
 # Log and print messages to stderr.
 _log() {
@@ -32,22 +33,27 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    exec 9>"$LOCKFILE"
-    until flock -n 9; do
+    if [ "${1:-}" = clean ]; then
+        rm "$PIDFILE"
+        flock -u 99
+        return
+    fi
+    exec 99>"$LOCKFILE"
+    until flock -n 99; do
         # Priority instances can kill all but non-priority exit if priority is running.
-        if [ "${1:-}" != priority ] && grep -q priority "$LOCKFILE"; then
+        if [ "${1:-}" != priority ] && grep -q priority "$PIDFILE"; then
             errex "Priority instance running"
         fi
         # Get other instance PID and kill it.
-        if target_pid="$(grep -Eo "^\d+" "$LOCKFILE")"; then
+        if target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
             warning "Killing other instance $target_pid"
-            kill "$target_pid" 2>/dev/null
+            kill "$target_pid" 2>/dev/null || true
         else
             # Race.
             usleep 100000
         fi
     done
-    [ "${1:-}" = priority ] && echo "$$:priority" >"$LOCKFILE" || echo "$$" >"$LOCKFILE"
+    [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
 }
 
 # Enable/disable repeater bands.
@@ -224,6 +230,9 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
+
+# Cleanup.
+single_instance clean
 
 # TODOs:
 #   - Look into allowing new instances to run without blocking hotplug and gl-switch.
