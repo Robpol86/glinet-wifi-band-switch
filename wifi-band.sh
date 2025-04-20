@@ -14,8 +14,8 @@
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
 
-BASENAME=wifi-band  # Hardcoding because $0 is /sbin/hotplug-call when called from hotplug.d symlink.
-HOTPLUG_D_IFACE_SYMLINK="/etc/hotplug.d/iface/10-$BASENAME"
+BASENAME="$(basename "${0%.*}")"
+HOTPLUG_SCRIPT="/etc/hotplug.d/iface/10-$BASENAME"
 
 # Log and print messages to stderr.
 _log() {
@@ -86,17 +86,22 @@ wait_for_online() {
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
 enable_hotplug() {
-    debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
-    ln -f -s "$0" "$HOTPLUG_D_IFACE_SYMLINK" || errex "Failed to create symlink $HOTPLUG_D_IFACE_SYMLINK"
+    debug "Creating $HOTPLUG_SCRIPT"
+    { cat > "$HOTPLUG_SCRIPT" <<EOF
+#!/bin/sh
+$0 &
+EOF
+    } || errex "Failed to create $HOTPLUG_SCRIPT"
+    chmod +x "$HOTPLUG_SCRIPT" || errex "Failed to make $HOTPLUG_SCRIPT executable"
 }
 disable_hotplug() {
-    if [ -e "$HOTPLUG_D_IFACE_SYMLINK" ]; then
-        debug "Removing $HOTPLUG_D_IFACE_SYMLINK symlink"
-        rm -f "$HOTPLUG_D_IFACE_SYMLINK"
+    if [ -e "$HOTPLUG_SCRIPT" ]; then
+        debug "Removing $HOTPLUG_SCRIPT"
+        rm -f "$HOTPLUG_SCRIPT"
     fi
 }
 is_hotplug_enabled() {
-    [ -e "$HOTPLUG_D_IFACE_SYMLINK" ]
+    [ -e "$HOTPLUG_SCRIPT" ]
 }
 
 # Returns 0 if script enabled in web UI.
