@@ -34,26 +34,34 @@ debug() { _log debug "$*"; }
 # Kill a running instance and run this one exclusively.
 single_instance() {
     if [ "${1:-}" = clean ]; then
+        debug CLEAN  # TODO remove
         rm "$PIDFILE"
         flock -u 99
+        exec 99>&-
         return
     fi
+    trap "single_instance clean" INT TERM EXIT
+    debug called before exec, "$PIDFILE" has current contents: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
     exec 99>"$LOCKFILE"
+    debug opened "$PIDFILE" has current contents: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
     until flock -n 99; do
+        debug flock exited 1  # TODO remove
         # Priority instances can kill all but non-priority exit if priority is running.
         if [ "${1:-}" != priority ] && grep -q priority "$PIDFILE"; then
             errex "Priority instance running"
         fi
         # Get other instance PID and kill it.
         if target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
-            warning "Killing other instance $target_pid"
-            kill "$target_pid" 2>/dev/null || true
-        else
-            # Race.
-            usleep 100000
+            debug got pid "$target_pid"  # TODO remove
+            debug "killing other instance $target_pid"
+            kill -SIGTERM "$target_pid" 2>/dev/null || debug kill failed # TODO better debug message
         fi
+        sleep 1  # TODO usleep 100000
+        debug end of iteration  # TODO remove
     done
+    debug out of loop  # TODO remove
     [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
+    debug wrote "$$" to "$PIDFILE" here: "$(cat "$PIDFILE" 2>/dev/null || true)"  # TODO remove
 }
 
 # Enable/disable repeater bands.
@@ -230,9 +238,6 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
-
-# Cleanup.
-single_instance clean
 
 # TODOs:
 #   - Look into allowing new instances to run without blocking hotplug and gl-switch.
