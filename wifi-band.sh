@@ -34,6 +34,11 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
+    if [ "${1:-}" = clean ]; then
+        flock -u 9
+        exec 9>&-
+        return
+    fi
     starttime="$(date +%s)"
     killfailed=
     exec 9>"$LOCKFILE"
@@ -49,7 +54,7 @@ single_instance() {
         fi
         # Timeout.
         now="$(date +%s)"
-        if [ $(( (now - starttime) )) -gt "$LOCKTIMEOUT" ]; then
+        if [ $(( now - starttime )) -gt "$LOCKTIMEOUT" ]; then
             errex "Timed out waiting for lock"
         fi
         # Sleep.
@@ -216,6 +221,7 @@ if [ "$1" = off ]; then
 elif [ "$1" = on ]; then
     info "Toggle switch ON"
     enable_hotplug
+    single_instance clean # Unlock and close fd before starting subprocess, which inherits every fd from the parent
     "$0" do_toggled_on &
     exit 0
 elif [ "$1" = do_toggled_on ]; then
@@ -232,6 +238,3 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
-
-# TODOs:
-#   - Look into allowing new instances to run without blocking hotplug and gl-switch.
