@@ -175,7 +175,7 @@ fi
 if [ "$1" = off ]; then
     single_instance_priority # In case hotplug runs at the same time switch is toggled off
 else
-    single_instance # May block if priority instance is running.
+    single_instance
 fi
 
 # Main
