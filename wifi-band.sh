@@ -14,8 +14,11 @@
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
 
-BASENAME=wifi-band  # Hardcoding because $0 is /sbin/hotplug-call when called from hotplug.d symlink.
-HOTPLUG_D_IFACE_SYMLINK="/etc/hotplug.d/iface/10-$BASENAME"
+BASENAME="$(basename "${0%.*}")"
+HOTPLUG_SCRIPT="/etc/hotplug.d/iface/10-$BASENAME"
+LOCKFILE="/var/lock/$BASENAME.lock"
+PIDFILE="/var/run/$BASENAME.pid"
+LOCKTIMEOUT=10
 
 # Log and print messages to stderr.
 _log() {
@@ -29,12 +32,35 @@ warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
 
-# Ensure script runs once at a time.
+# Kill a running instance and run this one exclusively.
 single_instance() {
-    : # TODO if priority is running kill self, else kill other instance
-}
-single_instance_priority() {
-    : # TODO kill all other instances and run this one
+    if [ "${1:-}" = clean ]; then
+        flock -u 9
+        exec 9>&-
+        return
+    fi
+    starttime="$(date +%s)"
+    killfailed=
+    exec 9>"$LOCKFILE"
+    until flock -n 9; do
+        # Priority instances can kill all but non-priority exit if priority is running.
+        if [ "${1:-}" != priority ] && grep -q priority "$PIDFILE"; then
+            errex "Priority instance running"
+        fi
+        # Get other instance PID and kill it.
+        if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
+            debug "Killing other instance $target_pid"
+            kill -9 "-$target_pid" 2>/dev/null || { warning "Kill failed with $?"; killfailed=1; }
+        fi
+        # Timeout.
+        now="$(date +%s)"
+        if [ $(( now - starttime )) -gt "$LOCKTIMEOUT" ]; then
+            errex "Timed out waiting for lock"
+        fi
+        # Sleep.
+        usleep 250000
+    done
+    [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
 }
 
 # Enable/disable repeater bands.
@@ -86,17 +112,22 @@ wait_for_online() {
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
 enable_hotplug() {
-    debug "Creating $HOTPLUG_D_IFACE_SYMLINK symlink"
-    ln -f -s "$0" "$HOTPLUG_D_IFACE_SYMLINK" || errex "Failed to create symlink $HOTPLUG_D_IFACE_SYMLINK"
+    debug "Creating $HOTPLUG_SCRIPT"
+    { cat > "$HOTPLUG_SCRIPT" <<EOF
+#!/bin/sh
+"$0" \$@ &
+EOF
+    } || errex "Failed to create $HOTPLUG_SCRIPT"
+    chmod +x "$HOTPLUG_SCRIPT" || errex "Failed to make $HOTPLUG_SCRIPT executable"
 }
 disable_hotplug() {
-    if [ -e "$HOTPLUG_D_IFACE_SYMLINK" ]; then
-        debug "Removing $HOTPLUG_D_IFACE_SYMLINK symlink"
-        rm -f "$HOTPLUG_D_IFACE_SYMLINK"
+    if [ -e "$HOTPLUG_SCRIPT" ]; then
+        debug "Removing $HOTPLUG_SCRIPT"
+        rm -f "$HOTPLUG_SCRIPT"
     fi
 }
 is_hotplug_enabled() {
-    [ -e "$HOTPLUG_D_IFACE_SYMLINK" ]
+    [ -e "$HOTPLUG_SCRIPT" ]
 }
 
 # Returns 0 if script enabled in web UI.
@@ -160,7 +191,7 @@ if printf '%s\n' "$@" |grep -qE '^(-h|--help|help|[/-][?])$'; then
     errex "more info: https://github.com/Robpol86/glinet-wifi-band-switch"
 elif [ $# -ne 1 ]; then
     errex "requires exactly 1 argument"
-elif [ "$1" != on ] && [ "$1" != off ] && [ "$1" != iface ]; then
+elif [ "$1" != on ] && [ "$1" != do_toggled_on ] && [ "$1" != off ] && [ "$1" != iface ]; then
     errex "bad argument, expected on|off|iface but got $1"
 elif [ "$1" = iface ]; then
     [ -n "${ACTION:-}" ] || errex "Missing ACTION variable"
@@ -173,7 +204,7 @@ fi
 
 # Single instance.
 if [ "$1" = off ]; then
-    single_instance_priority # In case hotplug runs at the same time switch is toggled off
+    single_instance priority # In case hotplug runs at the same time switch is toggled off
 else
     single_instance
 fi
@@ -190,6 +221,10 @@ if [ "$1" = off ]; then
 elif [ "$1" = on ]; then
     info "Toggle switch ON"
     enable_hotplug
+    single_instance clean # Unlock and close fd before starting subprocess, which inherits every fd from the parent
+    "$0" do_toggled_on &
+    exit 0
+elif [ "$1" = do_toggled_on ]; then
     do_toggled_on
 elif [ "$ACTION" = ifup ]; then
     info "WWAN interface connected"
@@ -203,6 +238,3 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
-
-# TODOs:
-#   - Look into allowing new instances to run without blocking hotplug and gl-switch.
