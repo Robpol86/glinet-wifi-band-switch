@@ -32,7 +32,7 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    exec 9> "$LOCKFILE"
+    exec 9>"$LOCKFILE"
     until flock -n 9; do
         # Priority instances can kill all but non-priority exit if priority is running.
         if [ "${1:-}" != priority ] && grep -q priority "$LOCKFILE"; then
@@ -41,13 +41,13 @@ single_instance() {
         # Get other instance PID and kill it.
         if target_pid="$(grep -Eo "^\d+" "$LOCKFILE")"; then
             warning "Killing other instance $target_pid"
-            kill "$target_pid"
+            kill "$target_pid" 2>/dev/null
         else
             # Race.
             usleep 100000
         fi
     done
-    [ "${1:-}" = priority ] && echo "$$:priority" > "$LOCKFILE" || echo "$$" > "$LOCKFILE"
+    [ "${1:-}" = priority ] && echo "$$:priority" >"$LOCKFILE" || echo "$$" >"$LOCKFILE"
 }
 
 # Enable/disable repeater bands.
