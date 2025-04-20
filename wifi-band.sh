@@ -16,6 +16,7 @@ set -o nounset  # Treat unset variables as errors and exit immediately.
 
 BASENAME="$(basename "${0%.*}")"
 HOTPLUG_SCRIPT="/etc/hotplug.d/iface/10-$BASENAME"
+LOCKFILE="/var/lock/$BASENAME.lock"
 
 # Log and print messages to stderr.
 _log() {
@@ -29,12 +30,24 @@ warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
 
-# Ensure script runs once at a time.
+# Kill a running instance and run this one exclusively.
 single_instance() {
-    : # TODO if priority is running kill self, else kill other instance
-}
-single_instance_priority() {
-    : # TODO kill all other instances and run this one
+    exec 9> "$LOCKFILE"
+    until flock -n 9; do
+        # Priority instances can kill all but non-priority exit if priority is running.
+        if [ "${1:-}" != priority ] && grep -q priority "$LOCKFILE"; then
+            errex "Priority instance running"
+        fi
+        # Get other instance PID and kill it.
+        if target_pid="$(grep -Eo "^\d+" "$LOCKFILE")"; then
+            warning "Killing other instance $target_pid"
+            kill "$target_pid"
+        else
+            # Race.
+            usleep 100000
+        fi
+    done
+    [ "${1:-}" = priority ] && echo "$$:priority" > "$LOCKFILE" || echo "$$" > "$LOCKFILE"
 }
 
 # Enable/disable repeater bands.
@@ -178,7 +191,7 @@ fi
 
 # Single instance.
 if [ "$1" = off ]; then
-    single_instance_priority # In case hotplug runs at the same time switch is toggled off
+    single_instance priority # In case hotplug runs at the same time switch is toggled off
 else
     single_instance
 fi
