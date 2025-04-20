@@ -165,7 +165,7 @@ if printf '%s\n' "$@" |grep -qE '^(-h|--help|help|[/-][?])$'; then
     errex "more info: https://github.com/Robpol86/glinet-wifi-band-switch"
 elif [ $# -ne 1 ]; then
     errex "requires exactly 1 argument"
-elif [ "$1" != on ] && [ "$1" != off ] && [ "$1" != iface ]; then
+elif [ "$1" != on ] && [ "$1" != on-block ] && [ "$1" != off ] && [ "$1" != iface ]; then
     errex "bad argument, expected on|off|iface but got $1"
 elif [ "$1" = iface ]; then
     [ -n "${ACTION:-}" ] || errex "Missing ACTION variable"
@@ -195,6 +195,9 @@ if [ "$1" = off ]; then
 elif [ "$1" = on ]; then
     info "Toggle switch ON"
     enable_hotplug
+    "$0" on-block &
+    exit 0
+elif [ "$1" = on-block ]; then
     do_toggled_on
 elif [ "$ACTION" = ifup ]; then
     info "WWAN interface connected"
