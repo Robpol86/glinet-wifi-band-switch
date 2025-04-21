@@ -37,7 +37,7 @@ single_instance() {
     if [ "${1:-}" = unlock ]; then
         grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
             num="${fdinfo##*/}"
-            debug "Release lock on fd $num"
+            debug "Releasing lock on fd $num"
             flock -u "$num"
         done
         return
