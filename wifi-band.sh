@@ -34,6 +34,7 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
+    # TODO everything here debug
     if [ "${1:-}" = unlock ]; then
         grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
             num="${fdinfo##*/}"
