@@ -57,7 +57,7 @@ single_instance() {
             { kill -9 "-$target_pid" || kill -9 "$target_pid" || debug "FAILED A"; } 2>/dev/null
             # Kill all processes holding the lock.
             lockfie_id="$(grep ^lock: /proc/self/fdinfo/9 |awk '{print $7}')"
-            grep -lE "^lock:.+\s$lockfie_id\s" /proc/*/fdinfo/* 2>/dev/null |awk -F/ '{print $3}' |while read -r child_pid; do
+            grep -lE "^lock:.+\s$lockfie_id\s" /proc/[0-9]*/fdinfo/* 2>/dev/null |awk -F/ '{print $3}' |while read -r child_pid; do
                 debug "Killing child process $child_pid"
                 kill -9 "$child_pid" 2>/dev/null || debug "FAILED B"
             done
