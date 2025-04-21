@@ -254,3 +254,4 @@ info Done
 # TODOs:
 #   - Revisit debug vs info
 #   - chmod +x needed for gl-switch?
+#   - ping 4.2.2.1
