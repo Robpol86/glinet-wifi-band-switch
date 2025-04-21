@@ -196,7 +196,6 @@ do_toggled_off() {
 
 # Main action when user toggles the switch ON (also called on boot with the initial switch state of ON).
 do_toggled_on() {
-    update_repeater_status
     if is_online; then
         info "Internet detected"
     elif is_portal; then
