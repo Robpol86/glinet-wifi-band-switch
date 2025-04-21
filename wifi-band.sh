@@ -94,7 +94,7 @@ disable_5g() {
 # Wait for repeater to connect and then get the band it's using.
 get_current_band() {
     until ubus call repeater status |jsonfilter -e @.state_s |grep -q '^connected$'; do
-        info "Waiting for repeater to connect"
+        debug "Waiting for repeater to connect"
         sleep 1
     done
     device="$(ubus call repeater status |jsonfilter -e @.device)"
@@ -113,14 +113,14 @@ is_online() {
 }
 wait_for_online() {
     until is_online; do
-        info "Waiting for internet"
+        debug "Waiting for internet"
         sleep 1
     done
 }
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
 enable_hotplug() {
-    info "Creating $HOTPLUG_SCRIPT"
+    debug "Creating $HOTPLUG_SCRIPT"
     { cat > "$HOTPLUG_SCRIPT" <<EOF
 #!/bin/sh
 "$0" \$@ &
@@ -130,7 +130,7 @@ EOF
 }
 disable_hotplug() {
     if [ -e "$HOTPLUG_SCRIPT" ]; then
-        info "Removing $HOTPLUG_SCRIPT"
+        debug "Removing $HOTPLUG_SCRIPT"
         rm -f "$HOTPLUG_SCRIPT"
     fi
 }
