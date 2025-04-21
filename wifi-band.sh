@@ -128,10 +128,21 @@ is_online() {
         timeout 1 ping -c1 google.com >/dev/null 2>&1
     fi
 }
+is_portal() {
+    update_repeater_status && [ "$repeater_status_portal" = "true" ]
+}
 wait_for_portal_or_online() {
-    until update_repeater_status && [ "$repeater_status_portal" = "true" ] || is_online; do
-        debug "Waiting for internet"
-        sleep 1
+    while true; do
+        if is_online; then
+            info "Internet detected"
+            break
+        elif is_portal; then
+            info "Portal detected"
+            break
+        else
+            debug "Waiting for internet"
+            sleep 1
+        fi
     done
 }
 
@@ -184,19 +195,22 @@ do_toggled_off() {
 
 # Main action when user toggles the switch ON (also called on boot with the initial switch state of ON).
 do_toggled_on() {
-    if ! is_online; then
+    update_repeater_status
+    if is_online; then
+        info "Internet detected"
+    elif is_portal; then
+        info "Portal detected"
+    else
         info "No internet, stopping wifi"
         toggle_bands disable_2g disable_5g
         wait_for_portal_or_online
     fi
-    info "Internet detected"
     great_decider
 }
 
 # Main action when the repeater connects to a WiFi network.
 do_wwan_connected() {
     wait_for_portal_or_online
-    info "Internet detected"
     great_decider
 }
 
