@@ -34,9 +34,12 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    if [ "${1:-}" = clean ]; then
-        flock -u 9
-        exec 9>&-
+    if [ "${1:-}" = unlock ]; then
+        grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
+            num="${fdinfo##*/}"
+            debug "Closing fd $num"
+            eval "exec $num>&-"
+        done
         return
     fi
     starttime="$(date +%s)"
@@ -210,6 +213,9 @@ fi
 # Single instance.
 if [ "$1" = off ]; then
     single_instance priority # In case hotplug runs at the same time switch is toggled off
+elif [ "$1" = do_toggled_on ]; then
+    single_instance unlock # Release inherited lock from gl-switch
+    single_instance
 else
     single_instance
 fi
@@ -226,7 +232,6 @@ if [ "$1" = off ]; then
 elif [ "$1" = on ]; then
     info "Toggle switch ON"
     enable_hotplug
-    single_instance clean # Unlock and close fd before starting subprocess, which inherits every fd from the parent
     "$0" do_toggled_on &
     info "Continuing in process $!"
     exit 0
