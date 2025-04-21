@@ -34,11 +34,10 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    # TODO everything here debug
     if [ "${1:-}" = unlock ]; then
         grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
             num="${fdinfo##*/}"
-            info "Closing lock fd $num"
+            debug "Closing lock fd $num"
             eval "exec $num>&-"
         done
         return
@@ -53,7 +52,7 @@ single_instance() {
         fi
         # Get other instance PID and kill it.
         if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
-            info "Killing other instance $target_pid"
+            debug "Killing other instance $target_pid"
             # Kill process group.
             if ! kill -9 "-$target_pid" 2>/dev/null; then
                 killfailed=1
@@ -68,7 +67,7 @@ single_instance() {
         # Sleep.
         usleep 250000
     done
-    info "Obtained lock"
+    debug "Obtained lock"
     [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
 }
 
