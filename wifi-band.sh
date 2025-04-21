@@ -37,7 +37,7 @@ single_instance() {
     if [ "${1:-}" = unlock ]; then
         grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
             num="${fdinfo##*/}"
-            debug "Closing lock fd $num"
+            info "Closing lock fd $num"
             eval "exec $num>&-"
         done
         return
@@ -52,7 +52,7 @@ single_instance() {
         fi
         # Get other instance PID and kill it.
         if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
-            debug "Killing other instance $target_pid"
+            info "Killing other instance $target_pid"
             # Kill process group.
             if ! kill -9 "-$target_pid" 2>/dev/null; then
                 killfailed=1
@@ -67,7 +67,7 @@ single_instance() {
         # Sleep.
         usleep 250000
     done
-    debug "Obtained lock"
+    info "Obtained lock"
     [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
 }
 
@@ -94,7 +94,7 @@ disable_5g() {
 # Wait for repeater to connect and then get the band it's using.
 get_current_band() {
     until ubus call repeater status |jsonfilter -e @.state_s |grep -q '^connected$'; do
-        debug "Waiting for repeater to connect"
+        info "Waiting for repeater to connect"
         sleep 1
     done
     device="$(ubus call repeater status |jsonfilter -e @.device)"
@@ -113,14 +113,14 @@ is_online() {
 }
 wait_for_online() {
     until is_online; do
-        debug "Waiting for internet"
+        info "Waiting for internet"
         sleep 1
     done
 }
 
 # Enable/disable being called when the WWAN interface connects or disconnects.
 enable_hotplug() {
-    debug "Creating $HOTPLUG_SCRIPT"
+    info "Creating $HOTPLUG_SCRIPT"
     { cat > "$HOTPLUG_SCRIPT" <<EOF
 #!/bin/sh
 "$0" \$@ &
@@ -130,7 +130,7 @@ EOF
 }
 disable_hotplug() {
     if [ -e "$HOTPLUG_SCRIPT" ]; then
-        debug "Removing $HOTPLUG_SCRIPT"
+        info "Removing $HOTPLUG_SCRIPT"
         rm -f "$HOTPLUG_SCRIPT"
     fi
 }
@@ -252,6 +252,5 @@ fi
 info Done
 
 # TODOs:
-#   - Revisit debug vs info
 #   - chmod +x needed for gl-switch?
 #   - ping 4.2.2.1
