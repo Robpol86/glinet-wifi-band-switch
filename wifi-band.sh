@@ -34,17 +34,17 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    if [ "${1:-}" = unlock ]; then
-        grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
-            num="${fdinfo##*/}"
-            debug "Releasing lock on fd $num"
-            flock -u "$num"
-        done
-        return
-    fi
     starttime="$(date +%s)"
     killfailed=
+    # Release any inherited locks.
+    grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
+        num="${fdinfo##*/}"
+        debug "Releasing lock on fd $num"
+        flock -u "$num"
+    done
+    # Open lock file.
     exec 9>"$LOCKFILE"
+    # Obtain the lock.
     until flock -n 9; do
         # Priority instances can kill all but non-priority exit if priority is running.
         if [ "${1:-}" != priority ] && grep -q priority "$PIDFILE"; then
@@ -213,9 +213,6 @@ fi
 # Single instance.
 if [ "$1" = off ]; then
     single_instance priority # In case hotplug runs at the same time switch is toggled off
-elif [ "$1" = do_toggled_on ]; then
-    single_instance unlock # Release inherited lock from gl-switch
-    single_instance
 else
     single_instance
 fi
