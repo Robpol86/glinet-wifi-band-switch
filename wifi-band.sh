@@ -52,15 +52,17 @@ single_instance() {
         fi
         # Get other instance PID and kill it.
         if [ -z "$killattempt" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
-            killattempt=1
-            debug "Killing other instance $target_pid"
-            { kill -9 "-$target_pid" || kill -9 "$target_pid" || debug "FAILED A"; } 2>/dev/null
-            # Kill all processes holding the lock.
-            lockfie_id="$(grep ^lock: /proc/self/fdinfo/9 |awk '{print $7}')"
-            grep -lE "^lock:.+\s$lockfie_id\s" /proc/[0-9]*/fdinfo/* 2>/dev/null |awk -F/ '{print $3}' |while read -r child_pid; do
-                debug "Killing child process $child_pid"
-                kill -9 "$child_pid" 2>/dev/null || debug "FAILED B"
-            done
+            lockfile_id="$(grep ^lock: "/proc/$target_pid/fdinfo/9" 2>/dev/null |awk '{print $7}')"
+            if [ -n "$lockfile_id" ]; then
+                killattempt=1
+                debug "Killing other instance $target_pid"
+                { kill -9 "-$target_pid" || kill -9 "$target_pid" || debug "FAILED A"; } 2>/dev/null
+                # Kill all processes holding the lock.
+                grep -lE "^lock:.+\s$lockfile_id\s" /proc/[0-9]*/fdinfo/* 2>/dev/null |awk -F/ '{print $3}' |while read -r child_pid; do
+                    debug "Killing child process $child_pid"
+                    kill -9 "$child_pid" 2>/dev/null || debug "FAILED B"
+                done
+            fi
         fi
         # Timeout.
         now="$(date +%s)"
