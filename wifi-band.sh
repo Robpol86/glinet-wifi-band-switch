@@ -53,8 +53,21 @@ single_instance() {
         # Get other instance PID and kill it.
         if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
             debug "Killing other instance $target_pid"
-            # Kill process group.
-            if ! kill -9 "-$target_pid" 2>/dev/null; then
+            # Kill process group or the process and its children manually.
+            if kill -9 "-$target_pid" 2>/dev/null; then
+                debug "Killed process group $target_pid"
+            elif kill -9 "$target_pid" 2>/dev/null; then
+                debug "Killed process $target_pid"
+                # Kill its childrn.
+                grep -lE "^PPid:\s*$target_pid$" /proc/*/status |awk -F/ '{print $3}' |while read -r child_pid; do
+                    if kill -9 "$child_pid" 2>/dev/null; then
+                        debug "Killed child process $child_pid"
+                    else
+                        killfailed=1
+                        warning "Kill child failed, still waiting for lock..."
+                    fi
+                done
+            else
                 killfailed=1
                 warning "Kill failed, still waiting for lock..."
             fi
