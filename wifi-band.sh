@@ -81,6 +81,7 @@ single_instance() {
 }
 
 update_repeater_status() {
+    debug "Updating repeater status"
     out="$(ubus call repeater status |jsonfilter -e @)"
     repeater_status_device="$(echo "$out" |jsonfilter -e @.device)"
     repeater_status_portal="$(echo "$out" |jsonfilter -e @.portal)"
