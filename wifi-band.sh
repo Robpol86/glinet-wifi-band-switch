@@ -56,11 +56,11 @@ single_instance() {
             if [ -n "$lockfile_id" ]; then
                 killattempt=1
                 debug "Killing other instance $target_pid"
-                { kill -9 "-$target_pid" || kill -9 "$target_pid" || debug "FAILED A"; } 2>/dev/null
+                { kill -9 "-$target_pid" || kill -9 "$target_pid" || true; } 2>/dev/null
                 # Kill all processes holding the lock.
                 grep -lE "^lock:.+\s$lockfile_id\s" /proc/[0-9]*/fdinfo/* 2>/dev/null |awk -F/ '{print $3}' |while read -r child_pid; do
                     debug "Killing child process $child_pid"
-                    kill -9 "$child_pid" 2>/dev/null || debug "FAILED B"
+                    kill -9 "$child_pid" 2>/dev/null || true
                 done
             fi
         fi
@@ -79,15 +79,21 @@ single_instance() {
 # Enable/disable repeater bands.
 enable_2g() {
     info "Enabling wifi2g"
+    uci set wireless.wifi2g.disabled=0 && uci commit wireless
+    wifi
 }
 enable_5g() {
     info "Enabling wifi5g"
+    uci set wireless.wifi5g.disabled=0 && uci commit wireless
+    wifi
 }
 disable_2g() {
     info "Disabling wifi2g"
+    uci set wireless.wifi2g.disabled=1 && uci commit wireless
 }
 disable_5g() {
     info "Disabling wifi5g"
+    uci set wireless.wifi5g.disabled=1 && uci commit wireless
 }
 
 # Wait for repeater to connect and then get the band it's using.
@@ -113,7 +119,7 @@ is_online() {
 wait_for_online() {
     until is_online; do
         debug "Waiting for internet"
-        sleep 600
+        sleep 1
     done
 }
 
