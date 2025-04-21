@@ -254,6 +254,5 @@ fi
 info Done
 
 # TODOs:
-#   - chmod +x needed for gl-switch?
 #   - ping 4.2.2.1
 #   - disabling wifi no longer actually disabling
