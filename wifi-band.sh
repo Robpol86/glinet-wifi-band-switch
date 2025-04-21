@@ -272,6 +272,3 @@ else
     exit 0
 fi
 info Done
-
-# TODOs:
-#   - ping 4.2.2.1
