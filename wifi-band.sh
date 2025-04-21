@@ -34,14 +34,17 @@ debug() { _log debug "$*"; }
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
-    if [ "${1:-}" = clean ]; then
-        flock -u 9
-        exec 9>&-
-        return
-    fi
     starttime="$(date +%s)"
     killfailed=
+    # Release any inherited locks.
+    grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
+        num="${fdinfo##*/}"
+        debug "Releasing lock on fd $num"
+        flock -u "$num"
+    done
+    # Open lock file.
     exec 9>"$LOCKFILE"
+    # Obtain the lock.
     until flock -n 9; do
         # Priority instances can kill all but non-priority exit if priority is running.
         if [ "${1:-}" != priority ] && grep -q priority "$PIDFILE"; then
@@ -226,7 +229,6 @@ if [ "$1" = off ]; then
 elif [ "$1" = on ]; then
     info "Toggle switch ON"
     enable_hotplug
-    single_instance clean # Unlock and close fd before starting subprocess, which inherits every fd from the parent
     "$0" do_toggled_on &
     info "Continuing in process $!"
     exit 0
@@ -245,3 +247,8 @@ else
     exit 0
 fi
 info Done
+
+# TODOs:
+#   - chmod +x needed for gl-switch?
+#   - ping 4.2.2.1
+#   - disabling wifi no longer actually disabling
