@@ -50,7 +50,11 @@ single_instance() {
         # Get other instance PID and kill it.
         if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
             debug "Killing other instance $target_pid"
-            kill -9 "-$target_pid" 2>/dev/null || { warning "Kill failed with $?"; killfailed=1; }
+            # Kill process group.
+            if ! kill -9 "-$target_pid" 2>/dev/null; then
+                killfailed=1
+                warning "Kill failed, still waiting for lock..."
+            fi
         fi
         # Timeout.
         now="$(date +%s)"
@@ -60,6 +64,7 @@ single_instance() {
         # Sleep.
         usleep 250000
     done
+    debug "Obtained lock"
     [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
 }
 
@@ -223,6 +228,7 @@ elif [ "$1" = on ]; then
     enable_hotplug
     single_instance clean # Unlock and close fd before starting subprocess, which inherits every fd from the parent
     "$0" do_toggled_on &
+    info "Continuing in process $!"
     exit 0
 elif [ "$1" = do_toggled_on ]; then
     do_toggled_on
@@ -238,3 +244,4 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
+info Done
