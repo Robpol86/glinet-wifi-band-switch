@@ -35,7 +35,7 @@ debug() { _log debug "$*"; }
 # Kill a running instance and run this one exclusively.
 single_instance() {
     starttime="$(date +%s)"
-    killfailed=
+    killattempt=
     # Release any inherited locks.
     grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
         num="${fdinfo##*/}"
@@ -51,12 +51,17 @@ single_instance() {
             errex "Priority instance running"
         fi
         # Get other instance PID and kill it.
-        if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
-            debug "Killing other instance $target_pid"
-            # Kill process group.
-            if ! kill -9 "-$target_pid" 2>/dev/null; then
-                killfailed=1
-                warning "Kill failed, still waiting for lock..."
+        if [ -z "$killattempt" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
+            lockfile_id="$(grep ^lock: "/proc/$target_pid/fdinfo/9" 2>/dev/null |awk '{print $7}')"
+            if [ -n "$lockfile_id" ]; then
+                killattempt=1
+                debug "Killing other instance $target_pid"
+                { kill -9 "-$target_pid" || kill -9 "$target_pid" || true; } 2>/dev/null
+                # Kill all processes holding the lock.
+                grep -lE "^lock:.+\s$lockfile_id\s" /proc/[0-9]*/fdinfo/* 2>/dev/null |awk -F/ '{print $3}' |while read -r child_pid; do
+                    debug "Killing child process $child_pid"
+                    kill -9 "$child_pid" 2>/dev/null || true
+                done
             fi
         fi
         # Timeout.
