@@ -37,7 +37,7 @@ single_instance() {
     if [ "${1:-}" = unlock ]; then
         grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
             num="${fdinfo##*/}"
-            debug "Closing fd $num"
+            debug "Closing lock fd $num"
             eval "exec $num>&-"
         done
         return
@@ -250,3 +250,7 @@ else
     exit 0
 fi
 info Done
+
+# TODOs:
+#   - Revisit debug vs info
+#   - chmod +x needed for gl-switch?
