@@ -35,7 +35,7 @@ debug() { _log debug "$*"; }
 # Kill a running instance and run this one exclusively.
 single_instance() {
     starttime="$(date +%s)"
-    killfailed=
+    killattempt=
     # Release any inherited locks.
     grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
         num="${fdinfo##*/}"
@@ -51,26 +51,15 @@ single_instance() {
             errex "Priority instance running"
         fi
         # Get other instance PID and kill it.
-        if [ -z "$killfailed" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
+        if [ -z "$killattempt" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
+            killattempt=1
             debug "Killing other instance $target_pid"
-            # Kill process group or the process and its children manually.
-            if kill -9 "-$target_pid" 2>/dev/null; then
-                debug "Killed process group $target_pid"
-            elif kill -9 "$target_pid" 2>/dev/null; then
-                debug "Killed process $target_pid"
-                # Kill its childrn.
-                grep -lE "^PPid:\s*$target_pid$" /proc/*/status |awk -F/ '{print $3}' |while read -r child_pid; do
-                    if kill -9 "$child_pid" 2>/dev/null; then
-                        debug "Killed child process $child_pid"
-                    else
-                        killfailed=1
-                        warning "Kill child failed, still waiting for lock..."
-                    fi
-                done
-            else
-                killfailed=1
-                warning "Kill failed, still waiting for lock..."
-            fi
+            { kill -9 "-$target_pid" || kill -9 "$target_pid" || true; } 2>/dev/null
+            # Kill all subprocesses.
+            grep -lE "^PPid:\s*$target_pid$" /proc/*/status |awk -F/ '{print $3}' |while read -r child_pid; do
+                debug "Killing child process $child_pid"
+                kill -9 "$child_pid" 2>/dev/null || true
+            done
         fi
         # Timeout.
         now="$(date +%s)"
