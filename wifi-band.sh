@@ -54,11 +54,11 @@ single_instance() {
         if [ -z "$killattempt" ] && target_pid="$(grep -Eo "^\d+" "$PIDFILE")"; then
             killattempt=1
             debug "Killing other instance $target_pid"
-            { kill -9 "-$target_pid" || kill -9 "$target_pid" || true; } 2>/dev/null
+            { kill -9 "-$target_pid" || kill -9 "$target_pid" || debug "FAILED A"; } 2>/dev/null
             # Kill all subprocesses.
             grep -lE "^PPid:\s*$target_pid$" /proc/*/status |awk -F/ '{print $3}' |while read -r child_pid; do
                 debug "Killing child process $child_pid"
-                kill -9 "$child_pid" 2>/dev/null || true
+                kill -9 "$child_pid" 2>/dev/null || debug "FAILED B"
             done
         fi
         # Timeout.
@@ -76,21 +76,15 @@ single_instance() {
 # Enable/disable repeater bands.
 enable_2g() {
     info "Enabling wifi2g"
-    uci set wireless.wifi2g.disabled=0 && uci commit wireless
-    wifi
 }
 enable_5g() {
     info "Enabling wifi5g"
-    uci set wireless.wifi5g.disabled=0 && uci commit wireless
-    wifi
 }
 disable_2g() {
     info "Disabling wifi2g"
-    uci set wireless.wifi2g.disabled=1 && uci commit wireless
 }
 disable_5g() {
     info "Disabling wifi5g"
-    uci set wireless.wifi5g.disabled=1 && uci commit wireless
 }
 
 # Wait for repeater to connect and then get the band it's using.
@@ -116,7 +110,7 @@ is_online() {
 wait_for_online() {
     until is_online; do
         debug "Waiting for internet"
-        sleep 1
+        sleep 600
     done
 }
 
