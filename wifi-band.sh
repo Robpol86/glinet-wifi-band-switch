@@ -10,6 +10,14 @@
 #   3. Set switch to ON (or if already on set it to OFF then ON)
 # To view logs run:
 #   logread -e wifi-band
+# To uninstall:
+#   1. In the GL.iNet web UI go to System > Toggle Button Settings and select something else
+#   2. Delete these files:
+#       a. /etc/gl-switch.d/wifi-band.sh
+#       b. /etc/hotplug.d/iface/10-wifi-band
+#       c. /var/lock/wifi-band.lock
+#       d. /var/run/wifi-band.pid
+#   3. Remove this script's path from /etc/sysupgrade.conf
 
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
@@ -205,6 +213,14 @@ great_decider() {
     esac
 }
 
+# Ensures the script survives firmware upgrades.
+preserve_firmware_upgrades() {
+    if ! grep -qF "$0" /etc/sysupgrade.conf; then
+        echo "$0" >> /etc/sysupgrade.conf
+        info "Added entry to /etc/sysupgrade.conf to survive firmware upgrades"
+    fi
+}
+
 # Main action when user toggles the switch OFF (also called on boot with the initial switch state of OFF).
 do_toggled_off() {
     toggle_bands enable_2g enable_5g
@@ -290,4 +306,5 @@ else
     debug "ACTION=$ACTION not ifup|ifdown, ignoring"
     exit 0
 fi
+preserve_firmware_upgrades
 info Done
