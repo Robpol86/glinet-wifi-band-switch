@@ -28,6 +28,7 @@ LOCKFILE="/var/lock/$BASENAME.lock"
 PIDFILE="/var/run/$BASENAME.pid"
 LOCKTIMEOUT=10
 PING_HOST=1.1.1.1
+SLEEP_FOR=5
 
 repeater_status_device=
 repeater_status_portal=
@@ -129,7 +130,7 @@ toggle_bands() {
 get_current_band() {
     until update_repeater_status && echo "$repeater_status_state_s" |grep -q '^connected$'; do
         debug "Waiting for repeater to connect"
-        sleep 1
+        sleep "$SLEEP_FOR"
     done
     band="$(uci get "wireless.$repeater_status_device.band")"
     info "Connected on band $band"
@@ -167,7 +168,7 @@ wait_for_portal_or_online() {
             break
         else
             debug "Waiting for internet"
-            sleep 1
+            sleep "$SLEEP_FOR"
         fi
     done
 }
