@@ -27,6 +27,7 @@ HOTPLUG_SCRIPT="/etc/hotplug.d/iface/10-$BASENAME"
 LOCKFILE="/var/lock/$BASENAME.lock"
 PIDFILE="/var/run/$BASENAME.pid"
 LOCKTIMEOUT=10
+PING_HOST=1.1.1.1
 
 repeater_status_device=
 repeater_status_portal=
@@ -140,12 +141,12 @@ is_online() {
     # Try a few times in case of flaky internet.
     for i in $(seq 1 3); do
         if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
-            if timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1; then
+            if timeout 1 ping -I ovpnclient -c1 "$PING_HOST" >/dev/null 2>&1; then
                 [ "$i" -eq 1 ] || info "Flaky internet"
                 return 0
             fi
         else
-            if timeout 1 ping -c1 google.com >/dev/null 2>&1; then
+            if timeout 1 ping -c1 "$PING_HOST" >/dev/null 2>&1; then
                 [ "$i" -eq 1 ] || info "Flaky internet"
                 return 0
             fi
