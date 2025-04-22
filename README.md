@@ -11,7 +11,3 @@ I use this to read logs quickly since there's no `ctrl+r` in ASH.
 ```bash
 lr () ( set -x; logread -e wifi-band -f; )
 ```
-
-## TODOs
-
-- When portal is detected don't disable all interfaces (`grep portal /etc/rc.button/switch`)

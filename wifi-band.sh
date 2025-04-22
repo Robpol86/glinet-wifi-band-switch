@@ -20,6 +20,10 @@ LOCKFILE="/var/lock/$BASENAME.lock"
 PIDFILE="/var/run/$BASENAME.pid"
 LOCKTIMEOUT=10
 
+repeater_status_device=
+repeater_status_portal=
+repeater_status_state_s=
+
 # Log and print messages to stderr.
 _log() {
     level="$1";
@@ -76,6 +80,14 @@ single_instance() {
     [ "${1:-}" = priority ] && echo "$$:priority" >"$PIDFILE" || echo "$$" >"$PIDFILE"
 }
 
+update_repeater_status() {
+    debug "Updating repeater status"
+    out="$(ubus call repeater status |jsonfilter -e @)"
+    repeater_status_device="$(echo "$out" |jsonfilter -e @.device)"
+    repeater_status_portal="$(echo "$out" |jsonfilter -e @.portal)"
+    repeater_status_state_s="$(echo "$out" |jsonfilter -e @.state_s)"
+}
+
 # Enable/disable repeater bands.
 toggle_bands() {
     if printf '%s\n' "$@" |grep -qE '^(enable_2g)$'; then
@@ -100,17 +112,16 @@ toggle_bands() {
 
 # Wait for repeater to connect and then get the band it's using.
 get_current_band() {
-    until ubus call repeater status |jsonfilter -e @.state_s |grep -q '^connected$'; do
+    until update_repeater_status && echo "$repeater_status_state_s" |grep -q '^connected$'; do
         debug "Waiting for repeater to connect"
         sleep 1
     done
-    device="$(ubus call repeater status |jsonfilter -e @.device)"
-    band="$(uci get "wireless.$device.band")"
+    band="$(uci get "wireless.$repeater_status_device.band")"
     info "Connected on band $band"
     echo "$band"
 }
 
-# Wait until there is internet available. Blocks indefinitely on portal.
+# Wait until there is internet available or if portal detected.
 is_online() {
     if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
         timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1
@@ -118,10 +129,21 @@ is_online() {
         timeout 1 ping -c1 google.com >/dev/null 2>&1
     fi
 }
-wait_for_online() {
-    until is_online; do
-        debug "Waiting for internet"
-        sleep 1
+is_portal() {
+    update_repeater_status && [ "$repeater_status_portal" = "true" ]
+}
+wait_for_portal_or_online() {
+    while true; do
+        if is_online; then
+            info "Internet detected"
+            break
+        elif is_portal; then
+            info "Portal detected"
+            break
+        else
+            debug "Waiting for internet"
+            sleep 1
+        fi
     done
 }
 
@@ -174,19 +196,21 @@ do_toggled_off() {
 
 # Main action when user toggles the switch ON (also called on boot with the initial switch state of ON).
 do_toggled_on() {
-    if ! is_online; then
+    if is_online; then
+        info "Internet detected"
+    elif is_portal; then
+        info "Portal detected"
+    else
         info "No internet, stopping wifi"
         toggle_bands disable_2g disable_5g
-        wait_for_online
+        wait_for_portal_or_online
     fi
-    info "Internet detected"
     great_decider
 }
 
 # Main action when the repeater connects to a WiFi network.
 do_wwan_connected() {
-    wait_for_online
-    info "Internet detected"
+    wait_for_portal_or_online
     great_decider
 }
 
@@ -248,6 +272,3 @@ else
     exit 0
 fi
 info Done
-
-# TODOs:
-#   - ping 4.2.2.1
