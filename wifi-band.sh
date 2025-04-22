@@ -125,11 +125,15 @@ get_current_band() {
 
 # Wait until there is internet available or if portal detected.
 is_online() {
-    if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
-        timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1
-    else
-        timeout 1 ping -c1 google.com >/dev/null 2>&1
-    fi
+    # Try a few times in case of flaky internet.
+    for _ in $(seq 3 -1 1); do
+        if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
+            if timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1; then return 0; fi
+        else
+            if timeout 1 ping -c1 google.com >/dev/null 2>&1; then return 0; fi
+        fi
+    done
+    return 1
 }
 is_portal() {
     update_repeater_status && [ "$repeater_status_portal" = "true" ]
