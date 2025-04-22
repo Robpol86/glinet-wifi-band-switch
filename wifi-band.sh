@@ -92,22 +92,26 @@ update_repeater_status() {
 
 # Enable/disable repeater bands.
 toggle_bands() {
-    if printf '%s\n' "$@" |grep -qE '^(enable_2g)$'; then
-        info "Enabling wifi2g"
-        uci set wireless.wifi2g.disabled=0
-    fi
-    if printf '%s\n' "$@" |grep -qE '^(disable_2g)$'; then
-        info "Disabling wifi2g"
-        uci set wireless.wifi2g.disabled=1
-    fi
-    if printf '%s\n' "$@" |grep -qE '^(enable_5g)$'; then
-        info "Enabling wifi5g"
-        uci set wireless.wifi5g.disabled=0
-    fi
-    if printf '%s\n' "$@" |grep -qE '^(disable_5g)$'; then
-        info "Disabling wifi5g"
-        uci set wireless.wifi5g.disabled=1
-    fi
+    for arg in "$@"; do
+        case "$arg" in
+        enable_2g)
+            info "Enabling wifi2g"
+            uci set wireless.wifi2g.disabled=0
+            ;;
+        disable_2g)
+            info "Disabling wifi2g"
+            uci set wireless.wifi2g.disabled=1
+            ;;
+        enable_5g)
+            info "Enabling wifi5g"
+            uci set wireless.wifi5g.disabled=0
+            ;;
+        disable_5g)
+            info "Disabling wifi5g"
+            uci set wireless.wifi5g.disabled=1
+            ;;
+        esac
+    done
     uci commit wireless
     wifi
 }
