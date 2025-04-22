@@ -17,7 +17,7 @@ This script solves two annoyances I had with my Beryl:
    WiFi!
 
 This script solves both problems. When enabled it detects which band the Beryl is connected to and then disables the same
-band hotspot and ensures the other band is enabled. It also waits until internet is detected before enablin the other band.
+band hotspot and ensures the other band is enabled. It also waits until internet is detected before enabling the other band.
 
 Of course when I go to a new hotel the Beryl won't have internet. For these situations the side switch on the device can be
 set to OFF which disables this script and enables both hotspot bands. Once I get the device connected to hotel WiFi I can set
