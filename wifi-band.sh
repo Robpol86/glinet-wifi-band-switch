@@ -8,7 +8,7 @@
 #       a. scp -O ./wifi-band.sh root@192.168.8.1:/etc/gl-switch.d/wifi-band.sh
 #   2. In the GL.iNet web UI go to System > Toggle Button Settings and select this script
 #   3. Set switch to ON (or if already on set it to OFF then ON)
-# To view logging run:
+# To view logs run:
 #   logread -e wifi-band
 
 set -o errexit  # Exit script if a command fails.
@@ -35,6 +35,8 @@ errex() { _log err "$*"; exit 1; }
 warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
+# shellcheck disable=SC2154 # https://github.com/koalaman/shellcheck/issues/1299
+trap 'ret=$?; [ $ret -eq 0 ] || error "Failed with $ret"' EXIT
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
@@ -123,11 +125,21 @@ get_current_band() {
 
 # Wait until there is internet available or if portal detected.
 is_online() {
-    if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
-        timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1
-    else
-        timeout 1 ping -c1 google.com >/dev/null 2>&1
-    fi
+    # Try a few times in case of flaky internet.
+    for i in $(seq 1 3); do
+        if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
+            if timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1; then
+                [ "$i" -eq 1 ] || info "Flaky internet"
+                return 0
+            fi
+        else
+            if timeout 1 ping -c1 google.com >/dev/null 2>&1; then
+                [ "$i" -eq 1 ] || info "Flaky internet"
+                return 0
+            fi
+        fi
+    done
+    return 1
 }
 is_portal() {
     update_repeater_status && [ "$repeater_status_portal" = "true" ]
