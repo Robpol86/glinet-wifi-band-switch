@@ -8,7 +8,7 @@
 #       a. scp -O ./wifi-band.sh root@192.168.8.1:/etc/gl-switch.d/wifi-band.sh
 #   2. In the GL.iNet web UI go to System > Toggle Button Settings and select this script
 #   3. Set switch to ON (or if already on set it to OFF then ON)
-# To view logging run:
+# To view logs run:
 #   logread -e wifi-band
 
 set -o errexit  # Exit script if a command fails.
