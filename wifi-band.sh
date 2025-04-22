@@ -10,6 +10,13 @@
 #   3. Set switch to ON (or if already on set it to OFF then ON)
 # To view logs run:
 #   logread -e wifi-band
+# To uninstall:
+#   1. In the GL.iNet web UI go to System > Toggle Button Settings and select something else
+#   2. Delete these files:
+#       a. /etc/gl-switch.d/wifi-band.sh
+#       b. /etc/hotplug.d/iface/10-wifi-band
+#       c. /var/lock/wifi-band.lock
+#       d. /var/run/wifi-band.pid
 
 set -o errexit  # Exit script if a command fails.
 set -o nounset  # Treat unset variables as errors and exit immediately.
