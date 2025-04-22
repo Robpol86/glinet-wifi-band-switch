@@ -8,9 +8,9 @@ To install read the top comment in the main script: [wifi-band.sh](wifi-band.sh)
 
 This script solves two annoyances I had with my Beryl:
 
-1. When I returned to my hotel room and powered it on, my laptop would connect to the hotspot wifi but I had no internet.
-   Sometimes internet wouldn't work until I had my laptop disconenct from the Beryl and then re-connect, which instantly gave
-   me internet. I suspect this had something to do with DNS caching on my MacBook.
+1. When I returned to my hotel room and powered it on, my laptop would connect to the Beryl hotspot wifi but I had no
+   internet. Sometimes internet wouldn't work until I had my laptop disconenct from the Beryl and then re-connect, which
+   instantly gave me internet. I suspect this had something to do with DNS caching on my MacBook.
 2. Every time I connected to hotel WiFI I would need to manually disable the 2.4g or 5g hotspot, depending on which band
    (frequency, 5 GHz or 2.4 GHz with the Beryl) the hotel WiFi was on. I did this to avoid repeating on the same WiFi band
    and thus halfing my internet speed. Some of these hotels gave me over 100 Mbit of internet over WiFi!
