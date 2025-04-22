@@ -77,23 +77,25 @@ single_instance() {
 }
 
 # Enable/disable repeater bands.
-enable_2g() {
-    info "Enabling wifi2g"
-    uci set wireless.wifi2g.disabled=0 && uci commit wireless
+toggle_bands() {
+    if printf '%s\n' "$@" |grep -qE '^(enable_2g)$'; then
+        info "Enabling wifi2g"
+        uci set wireless.wifi2g.disabled=0
+    fi
+    if printf '%s\n' "$@" |grep -qE '^(disable_2g)$'; then
+        info "Disabling wifi2g"
+        uci set wireless.wifi2g.disabled=1
+    fi
+    if printf '%s\n' "$@" |grep -qE '^(enable_5g)$'; then
+        info "Enabling wifi5g"
+        uci set wireless.wifi5g.disabled=0
+    fi
+    if printf '%s\n' "$@" |grep -qE '^(disable_5g)$'; then
+        info "Disabling wifi5g"
+        uci set wireless.wifi5g.disabled=1
+    fi
+    uci commit wireless
     wifi
-}
-enable_5g() {
-    info "Enabling wifi5g"
-    uci set wireless.wifi5g.disabled=0 && uci commit wireless
-    wifi
-}
-disable_2g() {
-    info "Disabling wifi2g"
-    uci set wireless.wifi2g.disabled=1 && uci commit wireless
-}
-disable_5g() {
-    info "Disabling wifi5g"
-    uci set wireless.wifi5g.disabled=1 && uci commit wireless
 }
 
 # Wait for repeater to connect and then get the band it's using.
@@ -153,33 +155,28 @@ great_decider() {
     band="$(get_current_band)"  # Blocks until WiFi connected.
     case "$band" in
     2g)
-        enable_5g
-        disable_2g
+        toggle_bands enable_5g disable_2g
         ;;
     5g)
-        enable_2g
-        disable_5g
+        toggle_bands enable_2g disable_5g
         ;;
     *)
         error "Unexpected band: $band"
-        enable_2g
-        enable_5g
+        toggle_bands enable_2g enable_5g
         ;;
     esac
 }
 
 # Main action when user toggles the switch OFF (also called on boot with the initial switch state of OFF).
 do_toggled_off() {
-    enable_2g
-    enable_5g
+    toggle_bands enable_2g enable_5g
 }
 
 # Main action when user toggles the switch ON (also called on boot with the initial switch state of ON).
 do_toggled_on() {
     if ! is_online; then
         info "No internet, stopping wifi"
-        disable_2g
-        disable_5g
+        toggle_bands disable_2g disable_5g
         wait_for_online
     fi
     info "Internet detected"
@@ -195,8 +192,7 @@ do_wwan_connected() {
 
 # Main action when the repeater loses connection.
 do_wwan_disconnected() {
-    disable_2g
-    disable_5g
+    toggle_bands disable_2g disable_5g
 }
 
 # Bad arguments.
@@ -254,6 +250,4 @@ fi
 info Done
 
 # TODOs:
-#   - chmod +x needed for gl-switch?
 #   - ping 4.2.2.1
-#   - disabling wifi no longer actually disabling
