@@ -43,7 +43,7 @@ single_instance() {
     starttime="$(date +%s)"
     killattempt=
     # Release any inherited locks.
-    grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* |while read -r fdinfo; do
+    grep -lE "FLOCK\s*ADVISORY" /proc/self/fdinfo/* 2>/dev/null |while read -r fdinfo; do
         num="${fdinfo##*/}"
         debug "Releasing lock on fd $num"
         flock -u "$num"
@@ -240,14 +240,17 @@ if printf '%s\n' "$@" |grep -qE '^(-h|--help|help|[/-][?])$'; then
     errex "more info: https://github.com/Robpol86/glinet-wifi-band-switch"
 elif [ $# -ne 1 ]; then
     errex "requires exactly 1 argument"
-elif [ "$1" != on ] && [ "$1" != do_toggled_on ] && [ "$1" != off ] && [ "$1" != iface ]; then
-    errex "bad argument, expected on|off|iface but got $1"
-elif [ "$1" = iface ]; then
-    [ -n "${ACTION:-}" ] || errex "Missing ACTION variable"
-    [ -n "${INTERFACE:-}" ] || errex "Missing INTERFACE variable"
-    if [ "$INTERFACE" != wwan ]; then
-        debug "INTERFACE=$INTERFACE not wwan, ignoring"
-        exit 0
+else
+    valid_args="on|do_toggled_on|off|iface"
+    if ! echo "$1" | grep -qE "^($valid_args)$"; then
+        errex "bad argument, expected $valid_args but got $1"
+    elif [ "$1" = iface ]; then
+        [ -n "${ACTION:-}" ] || errex "Missing ACTION variable"
+        [ -n "${INTERFACE:-}" ] || errex "Missing INTERFACE variable"
+        if [ "$INTERFACE" != wwan ]; then
+            debug "INTERFACE=$INTERFACE not wwan, ignoring"
+            exit 0
+        fi
     fi
 fi
 
