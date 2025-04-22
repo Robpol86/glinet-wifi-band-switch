@@ -126,11 +126,17 @@ get_current_band() {
 # Wait until there is internet available or if portal detected.
 is_online() {
     # Try a few times in case of flaky internet.
-    for _ in $(seq 3 -1 1); do
+    for i in $(seq 1 3); do
         if uci get vpnpolicy.global.kill_switch |grep -q '^1$'; then
-            if timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1; then return 0; fi
+            if timeout 1 ping -I ovpnclient -c1 google.com >/dev/null 2>&1; then
+                [ "$i" -eq 1 ] || info "Flaky internet"
+                return 0
+            fi
         else
-            if timeout 1 ping -c1 google.com >/dev/null 2>&1; then return 0; fi
+            if timeout 1 ping -c1 google.com >/dev/null 2>&1; then
+                [ "$i" -eq 1 ] || info "Flaky internet"
+                return 0
+            fi
         fi
     done
     return 1
