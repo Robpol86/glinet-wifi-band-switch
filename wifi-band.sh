@@ -35,6 +35,8 @@ errex() { _log err "$*"; exit 1; }
 warning() { _log warn "$*"; }
 info() { _log notice "$*"; }
 debug() { _log debug "$*"; }
+# shellcheck disable=SC2154 # https://github.com/koalaman/shellcheck/issues/1299
+trap 'ret=$?; [ $ret -eq 0 ] || error "Failed with $ret"' EXIT
 
 # Kill a running instance and run this one exclusively.
 single_instance() {
